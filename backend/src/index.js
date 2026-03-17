@@ -3,7 +3,6 @@ import app from "./app.js";
 import connectDb from "./config/database.connection.js";
 const port = process.env.PORT || 5100;
 
-
 connectDb()
   .then(() => {
     app.listen(port, () => {

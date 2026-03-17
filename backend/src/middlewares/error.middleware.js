@@ -43,13 +43,14 @@ const errorMiddleware = (err, req, res, next) => {
   }
 
   // Show stack only in development
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "DEVELOPMENT") {
     response.stack = err.stack;
   }
 
   return res.status(statusCode).json(response);
 };
 
+// higher order function for try catch 
 const asyncHandler = (requestHandler) => {
   return (req, resp, next) => {
     Promise.resolve(requestHandler(req, resp, next))

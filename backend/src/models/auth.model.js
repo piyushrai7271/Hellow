@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// indexing on email
+// indexing on email for fast searching
 userSchema.index({email:1, createdAt: -1});
 
 // hash password if its changing

@@ -1,35 +1,41 @@
 import User from "../models/auth.model.js";
+import ApiError from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 
 const jwtValidation = async (req, res, next) => {
   try {
-    // 1. Get token (cookie OR header)
     const token =
       req.cookies?.accessToken ||
       req.header("Authorization")?.replace("Bearer ", "");
 
-    // 2. if token missing give error
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: access token missing",
-      });
+      throw new ApiError(401, "Unauthorized: access token missing");
     }
-    // 3. decode token to get user id which is added in token
+
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // 4. find user with decoded token it
-    const user = await User.findById(decodedToken._id || decodedToken.id);
+    const user = await User.findById(decodedToken._id).select(
+      "-password -refreshToken"
+    );
 
-    // 5. Attach decoded data to request
-    req.user = user;
-    req.userId = user._id;
+    if (!user) {
+      throw new ApiError(401, "User not found");
+    }
+
+    req.user = user; // use when you only need read data
+    req.userId = decodedToken._id; // use when you need to update sensitive data not only read
+
     next();
   } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized: invalid or expired token",
-    });
+    if (error.name === "TokenExpiredError") {
+      throw new ApiError(401, "Access token expired");
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      throw new ApiError(401, "Invalid access token");
+    }
+
+    throw new ApiError(401, "Unauthorized access");
   }
 };
 

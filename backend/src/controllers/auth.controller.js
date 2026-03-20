@@ -1,34 +1,20 @@
+import User from "../models/auth.model.js";
+import jwt from "jsonwebtoken";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { asyncHandler } from "../middlewares/error.middleware.js";
-import {
-  uploadOnCloudinary,
-  deleteFromCloudinary,
-} from "../config/cloudinary.js";
-import User from "../models/auth.model.js";
-import jwt from "jsonwebtoken";
+import generateAccessAndRefreshToken from "../services/auth.service.js";
+import {uploadOnCloudinary,deleteFromCloudinary} from "../config/cloudinary.js";
+import {getAccessTokenOptions,getRefreshTokenOptions} from "../utils/cookieOptions.js";
 
-const generateAccessAndRefreshToken = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
-    return { accessToken, refreshToken };
-  } catch (error) {
-    throw new Error(
-      "somthing went worng while generating access and refresh token"
-    );
-  }
-};
+
 const registerUser = asyncHandler(async (req, res) => {
   // take input from body
   const { fullName, email, mobileNumber, bio, gender, password } = req.body;
 
   // validate comming input
   if (!fullName || !email || !mobileNumber || !bio || !gender || !password) {
-    throw new ApiError(404, "Please provide all the required field");
+    throw new ApiError(400, "Please provide all required fields");
   }
 
   // check gender match or not
@@ -52,19 +38,14 @@ const registerUser = asyncHandler(async (req, res) => {
     password, // password is hashed in model
   });
 
-  // fetch created user without sensitive data
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  if (!createdUser) {
-    throw new ApiError(500, "Somthing went wrong");
-  }
+  // removing sensitive data from user
+  user.password = undefined;
+  user.refreshToken = undefined;
 
   // return success response
   return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "User created successfully"));
+    .json(new ApiResponse(201, user, "User created successfully"));
 });
 const loginUser = asyncHandler(async (req, res) => {
   // take login details
@@ -78,8 +59,8 @@ const loginUser = asyncHandler(async (req, res) => {
   // find user with email
   const user = await User.findOne({ email });
   if (!user) {
-    throw new ApiError(404, "User not found !!");
-  }
+  throw new ApiError(401, "Invalid credentials");
+}
 
   // if user found validate password
   const isPasswordValid = await user.isPasswordCorrect(password);
@@ -92,23 +73,6 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  // handle cookie options to send token inside it
-  const isProduction = process.env.NODE_DEV === "PRODUCTION";
-
-  const accessTokenOption = {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    maxAge: 15 * 60 * 1000,
-  };
-
-  const refreshTokenOption = {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  };
-
   // removing password and refreshToken from user before sending
   user.password = undefined;
   user.refreshToken = undefined;
@@ -116,11 +80,11 @@ const loginUser = asyncHandler(async (req, res) => {
   // return response with token
   return res
     .status(200)
-    .cookie("accessToken", accessToken, accessTokenOption)
-    .cookie("refreshToken", refreshToken, refreshTokenOption)
+    .cookie("accessToken", accessToken, getAccessTokenOptions)
+    .cookie("refreshToken", refreshToken, getRefreshTokenOptions)
     .json(new ApiResponse(200, user, "User logged in successfully !!"));
 });
-const logOut = asyncHandler(async (req, res) => {
+const logOutUser = asyncHandler(async (req, res) => {
   // take user from middleware
   const user = req.user;
 
@@ -134,7 +98,7 @@ const logOut = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false });
 
   // cleare cookies of access and refresh token with response
-  const isProduction = process.env.NODE_ENV === "PRODUCTION";
+  const isProduction = process.env.NODE_ENV="development";
 
   const cookieOptions = {
     httpOnly: true,
@@ -156,7 +120,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
   // validate comming input
   if (!currentPassword || !newPassword || !confirmPassword) {
-    throw new ApiError(400, "Please provide all the required field");
+    throw new ApiError(400, "Please provide all required fields");
   }
 
   // user id from middleware
@@ -167,6 +131,11 @@ const changePassword = asyncHandler(async (req, res) => {
   // check that newPassword and confirmPassword is equal or not
   if (newPassword !== confirmPassword) {
     throw new ApiError(400, "newPassword is not equal to confirm password");
+  }
+
+  // check newPassword and current password should not same
+  if(currentPassword === newPassword){
+    throw new ApiError(400, "please provide unique new password")
   }
 
   // find user with userId using middleware
@@ -182,17 +151,17 @@ const changePassword = asyncHandler(async (req, res) => {
   }
   // if current password is correct than update the password
   user.password = newPassword;
-  await user.save({ validateBeforeSave: false });
+  await user.save();
 
   //return response
   return res
     .status(200)
-    .json(new ApiResponse(200,{}, "Password is changed successfully !!"));
+    .json(new ApiResponse(200, {}, "Password is changed successfully !!"));
 });
 const refreshAccessToken = asyncHandler(async (req, res) => {
   // token comming from cookies or body
   const incommingRefreshToken =
-    req.cookie?.refreshToken || req.body.refreshToken;
+    req.cookies?.refreshToken || req.body.refreshToken;
 
   if (!incommingRefreshToken) {
     throw new ApiError(401, "Unauthorize access");
@@ -223,47 +192,19 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       user._id
     );
 
-    // handle cookie options to send token inside it
-    const isProduction = process.env.NODE_DEV === "PRODUCTION";
-
-    const accessTokenOption = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      maxAge: 15 * 60 * 1000,
-    };
-
-    const refreshTokenOption = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    };
-
     // return response
     return res
       .status(200)
-      .cookie("accessToken", accessToken, accessTokenOption)
-      .cookie("refreshToken", refreshToken, refreshTokenOption)
+      .cookie("accessToken", accessToken, getAccessTokenOptions)
+      .cookie("refreshToken", refreshToken, getRefreshTokenOptions)
       .json(new ApiResponse(200, {}, "Access token refreshed !!"));
   } catch (error) {
-    return res.status(500).json(new ApiError(500, "Internal server error !!"));
+    throw new ApiError(500, "Internal server error");
   }
 });
-const getUserDetails = asyncHandler(async (req, res) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
   // comming from middleware
-  const userId = req.userId;
-
-  // validate userId
-  if (!userId) {
-    throw new ApiError(401, "UserId not found");
-  }
-
-  // find user with userId
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new ApiError(404, "User not found !!");
-  }
+  const user = req.user;
 
   // return response
   return res.status(200).json(
@@ -281,74 +222,55 @@ const getUserDetails = asyncHandler(async (req, res) => {
     )
   );
 });
-const addAvatar = asyncHandler(async (req, res) => {
-  const userId = req.userId;
-
-  if (!userId) {
-    throw new ApiError(401, "Unauthorized user !!");
-  }
+const uploadAvatar = asyncHandler(async (req, res) => {
+  const user = req.user;
 
   if (!req.file) {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  // Upload to Cloudinary
+  // Store old public_id
+  const oldPublicId = user.avatar?.public_id;
+
+  // 1️⃣ Upload new avatar
   const uploadResult = await uploadOnCloudinary(req.file, "avatars");
 
   if (!uploadResult) {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
-  const avatarUrl = uploadResult.secure_url;
-  const public_id = uploadResult.public_id;
-
-  // Find user
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
-
-  // Delete old avatar (if exists)
-  if (user.avatar?.public_id) {
-    await deleteFromCloudinary(user.avatar.public_id);
-  }
-
-  // Update user avatar
+  // 2️⃣ Update DB FIRST
   user.avatar = {
-    url: avatarUrl,
-    public_id: public_id,
+    url: uploadResult.secure_url,
+    public_id: uploadResult.public_id,
   };
 
   await user.save();
 
-  // Send response
+  // 3️⃣ Delete old avatar AFTER success
+  if (oldPublicId) {
+    try {
+      await deleteFromCloudinary(oldPublicId);
+    } catch (error) {
+      console.error("Old avatar deletion failed:", error);
+      // Don't break request
+    }
+  }
+
+  // 4️⃣ Response
   return res.status(200).json(
     new ApiResponse(
       200,
-      {
-        avatar: user.avatar,
-      },
+      { avatar: user.avatar },
       "Avatar updated successfully"
     )
   );
 });
 const updateAvatar = asyncHandler(async (req, res) => {
-  const userId = req.userId;
-
-  if (!userId) {
-    throw new ApiError(401, "Unauthorized user !!");
-  }
+  const user = req.user;
 
   if (!req.file) {
     throw new ApiError(400, "Avatar file is missing");
-  }
-
-  // Find user
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
   }
 
   // Store old public_id (for later deletion)
@@ -391,18 +313,8 @@ const updateAvatar = asyncHandler(async (req, res) => {
     );
 });
 const deleteAvatar = asyncHandler(async (req, res) => {
-  const userId = req.userId;
-
-  if (!userId) {
-    throw new ApiError(401, "Unauthorized user !!");
-  }
-
-  // Find user
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+  // comming from middleware
+  const user = req.user; 
 
   // Check if avatar exists
   if (!user.avatar?.public_id) {
@@ -429,11 +341,11 @@ const deleteAvatar = asyncHandler(async (req, res) => {
 export {
   registerUser,
   loginUser,
-  logOut,
+  logOutUser,
   changePassword,
   refreshAccessToken,
-  getUserDetails,
-  addAvatar,
+  getCurrentUser,
+  uploadAvatar,
   updateAvatar,
   deleteAvatar,
 };

@@ -6,7 +6,7 @@ const errorMiddleware = (err, req, res, next) => {
   let message = err.message || "Internal Server Error";
   let errors = err.errors || [];
 
-  // MongoDB & Mongoose Errors
+  // MongoDB & Mongoose Errors.....
 
   // Duplicate key error
   if (err.code === 11000) {

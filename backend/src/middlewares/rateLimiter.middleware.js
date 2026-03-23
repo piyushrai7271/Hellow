@@ -15,7 +15,7 @@ const globalRateLimiter = rateLimit({
     return ip;
   },
   // this help to avoid adding rate limiting on health check api's
-  skip: (req) => { 
+  skip: (req) => {
     // skip health checks
     if (req.path === "/health") return true;
 
@@ -94,4 +94,8 @@ const userRateLimiter = rateLimit({
   }),
 });
 
-export { globalRateLimiter, authRateLimiter, userRateLimiter };
+export { 
+  globalRateLimiter,
+  authRateLimiter, 
+  userRateLimiter 
+};

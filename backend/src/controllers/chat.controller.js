@@ -1,6 +1,6 @@
 import Message from "../models/message.model.js";
 import Chat from "../models/chat.model.js";
-import { asyncHandler } from "../middlewares/socketAuth.middleware.js";
+import { asyncHandler } from "../middlewares/error.middleware.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 

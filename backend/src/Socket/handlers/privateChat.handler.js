@@ -3,13 +3,12 @@ import Chat from "../../models/chat.model.js";
 
 const registerPrivateChat = (io, socket) => {
   socket.on("private-message", async ({ toUserId, message }) => {
-
     if (!toUserId || !message) {
       return socket.emit("error", "Invalid data");
     }
 
     try {
-      // 1. Find or create chat
+      // 1️⃣ Find or create chat
       let chat = await Chat.findOne({
         isGroupChat: false,
         members: { $all: [socket.userId, toUserId] },
@@ -21,18 +20,20 @@ const registerPrivateChat = (io, socket) => {
         });
       }
 
-      // 2. Save message
+      // 2️⃣ Save message
       const savedMessage = await Message.create({
         chatId: chat._id,
         senderId: socket.userId,
         message: message,
-        deliveredTo: [toUserId],
+        deliveredTo: [], // will handle later properly
       });
 
-      // 3. Update last message
-      chat.lastMessage = savedMessage._id;
-      await chat.save();
+      // 3️⃣ Update last message (ONLY ONCE)
+      await Chat.findByIdAndUpdate(chat._id, {
+        lastMessage: savedMessage._id,
+      });
 
+      // 4️⃣ Payload
       const payload = {
         messageId: savedMessage._id,
         chatId: chat._id,
@@ -41,12 +42,14 @@ const registerPrivateChat = (io, socket) => {
         createdAt: savedMessage.createdAt,
       };
 
-      // 4. Emit to receiver
+      // 5️⃣ Emit to receiver
       io.to(toUserId.toString()).emit("receive-private-message", payload);
 
-      // 5. Emit to sender
-      io.to(socket.userId.toString()).emit("receive-private-message", payload);
-
+      // 6️⃣ Emit to sender (self update)
+      io.to(socket.userId.toString()).emit(
+        "receive-private-message",
+        payload
+      );
     } catch (error) {
       console.error("Message save error:", error);
       socket.emit("error", "Failed to send message");

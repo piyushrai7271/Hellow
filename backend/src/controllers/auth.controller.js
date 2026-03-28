@@ -107,20 +107,16 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User logged in successfully !!"));
 });
 const logOutUser = asyncHandler(async (req, res) => {
-  // take user from middleware
   const user = req.user;
 
-  // check user is there or not
   if (!user) {
     throw new ApiError(404, "User is not found");
   }
 
-  // Invalidate refreshToken in db
   user.refreshToken = undefined;
   await user.save({ validateBeforeSave: false });
 
-  // cleare cookies of access and refresh token with response
-  const isProduction = process.env.NODE_ENV="development";
+  const isProduction = process.env.NODE_ENV === "production";
 
   const cookieOptions = {
     httpOnly: true,
@@ -128,7 +124,6 @@ const logOutUser = asyncHandler(async (req, res) => {
     sameSite: isProduction ? "none" : "lax",
   };
 
-  // clear cookies
   return res
     .status(200)
     .clearCookie("accessToken", cookieOptions)

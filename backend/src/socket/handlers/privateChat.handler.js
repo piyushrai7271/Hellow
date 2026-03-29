@@ -1,5 +1,6 @@
 import Message from "../../models/message.model.js";
 import Chat from "../../models/chat.model.js";
+import { onlineUsers } from "../../utils/onlineUsers.js";
 
 const registerPrivateChat = (io, socket) => {
   socket.on("private-message", async ({ toUserId, message }) => {
@@ -8,7 +9,7 @@ const registerPrivateChat = (io, socket) => {
     }
 
     try {
-      // 1️⃣ Find or create chat
+      // Find or create chat
       let chat = await Chat.findOne({
         isGroupChat: false,
         members: { $all: [socket.userId, toUserId] },
@@ -20,20 +21,20 @@ const registerPrivateChat = (io, socket) => {
         });
       }
 
-      // 2️⃣ Save message
+      // Save message
       const savedMessage = await Message.create({
         chatId: chat._id,
         senderId: socket.userId,
-        message: message,
-        deliveredTo: [], // will handle later properly
+        message,
+        deliveredTo: [],
+        seenBy: [],
       });
 
-      // 3️⃣ Update last message (ONLY ONCE)
+      // Update last message
       await Chat.findByIdAndUpdate(chat._id, {
         lastMessage: savedMessage._id,
       });
 
-      // 4️⃣ Payload
       const payload = {
         messageId: savedMessage._id,
         chatId: chat._id,
@@ -42,19 +43,42 @@ const registerPrivateChat = (io, socket) => {
         createdAt: savedMessage.createdAt,
       };
 
-      // 5️⃣ Emit to receiver
+      // Send to receiver
       io.to(toUserId.toString()).emit("receive-private-message", payload);
 
-      // 6️⃣ Emit to sender (self update)
+      // Delivered logic
+      if (onlineUsers.has(toUserId.toString())) {
+        await Message.findByIdAndUpdate(savedMessage._id, {
+          $addToSet: { deliveredTo: toUserId },
+        });
+
+        io.to(socket.userId.toString()).emit("message-delivered", {
+          messageId: savedMessage._id,
+          userId: toUserId,
+        });
+      }
+
+      // Send back to sender
       io.to(socket.userId.toString()).emit(
         "receive-private-message",
         payload
       );
+
     } catch (error) {
-      console.error("Message save error:", error);
+      console.error("Message error:", error);
       socket.emit("error", "Failed to send message");
     }
   });
 };
 
 export { registerPrivateChat };
+
+
+
+
+
+
+// Note:-...........
+// 🧠 Important (Frontend must do this)
+// typing-start → when user starts typing
+// typing-stop → after 1–2 sec of no typing OR message sent

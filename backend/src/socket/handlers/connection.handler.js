@@ -1,10 +1,11 @@
 import { registerPrivateChat } from "./privateChat.handler.js";
+import { registerTyping } from "./typing.handler.js";
+import { registerSeen } from "./seen.handler.js";
 import { registerOnlineUsers } from "./onlineUsers.handler.js";
 import { onlineUsers } from "../../utils/onlineUsers.js";
 import User from "../../models/auth.model.js";
 
 const handleConnection = (io, socket) => {
-  // handling error if occure
   socket.on("error", (err) => {
     console.error("Socket error:", err.message);
   });
@@ -13,29 +14,30 @@ const handleConnection = (io, socket) => {
 
   socket.join(userId);
 
-  // store online user while user is connected
+  // Store online user
   onlineUsers.set(userId, socket.id);
 
   console.log(`User ${userId} connected`);
 
   socket.broadcast.emit("user-online", { userId });
 
+  // Register features
   registerPrivateChat(io, socket);
+  registerTyping(io, socket);
+  registerSeen(io, socket);
   registerOnlineUsers(io, socket);
 
-  socket.on("disconnect", async() => {
-    // deleting user after disconnect
+  socket.on("disconnect", async () => {
     onlineUsers.delete(userId);
 
-    // save last seen
     const lastSeen = new Date();
-    await User.findByIdAndUpdate(userId, {lastSeen});
+    await User.findByIdAndUpdate(userId, { lastSeen });
 
-    // notify others
-    socket.broadcast.emit("user-offline",{
+    socket.broadcast.emit("user-offline", {
       userId,
-      lastSeen
+      lastSeen,
     });
+
     console.log(`User ${userId} disconnected`);
   });
 };

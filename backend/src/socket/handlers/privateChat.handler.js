@@ -3,8 +3,10 @@ import Chat from "../../models/chat.model.js";
 import { onlineUsers } from "../../utils/onlineUsers.js";
 
 const registerPrivateChat = (io, socket) => {
-  socket.on("private-message", async ({ toUserId, message }) => {
-    if (!toUserId || !message) {
+  socket.on("private-message", async ({ toUserId, message, messageType, fileUrl }) => {
+    
+    // FIXED validation
+    if (!toUserId || (!message && !fileUrl)) {
       return socket.emit("error", "Invalid data");
     }
 
@@ -21,11 +23,16 @@ const registerPrivateChat = (io, socket) => {
         });
       }
 
+      // ✅ decide message type properly
+      const finalMessageType = messageType || (fileUrl ? "file" : "text");
+
       // Save message
       const savedMessage = await Message.create({
         chatId: chat._id,
         senderId: socket.userId,
-        message,
+        message: message || "",
+        messageType: finalMessageType,
+        fileUrl: fileUrl || "",
         deliveredTo: [],
         seenBy: [],
       });
@@ -40,6 +47,8 @@ const registerPrivateChat = (io, socket) => {
         chatId: chat._id,
         fromUserId: socket.userId.toString(),
         message: savedMessage.message,
+        messageType: savedMessage.messageType,
+        fileUrl: savedMessage.fileUrl,
         createdAt: savedMessage.createdAt,
       };
 
@@ -59,10 +68,12 @@ const registerPrivateChat = (io, socket) => {
       }
 
       // Send back to sender
-      io.to(socket.userId.toString()).emit(
-        "receive-private-message",
-        payload
-      );
+      io.to(socket.userId.toString()).emit("receive-private-message", payload);
+
+      // ✅ typing stop (important UX)
+      io.to(toUserId.toString()).emit("user-stop-typing", {
+        userId: socket.userId.toString(),
+      });
 
     } catch (error) {
       console.error("Message error:", error);
@@ -72,9 +83,6 @@ const registerPrivateChat = (io, socket) => {
 };
 
 export { registerPrivateChat };
-
-
-
 
 
 

@@ -173,14 +173,54 @@ const createNewChat = asyncHandler(async (req, res) => {
   };
 
   // 6️⃣ Send response
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { chat: formattedChat },
+        "Chat created/fetched successfully"
+      )
+    );
+});
+const uploadMessageFile = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+
+  if (!req.file) {
+    throw new ApiError(400, "Message file is missing");
+  }
+
+  // 1️⃣ Upload to Cloudinary
+  const result = await uploadOnCloudinary(req.file, "chat-files");
+
+  if (!result) {
+    throw new ApiError(500, "File upload failed");
+  }
+
+  // 2️⃣ Decide message type
+  let messageType = "file";
+
+  if (req.file.mimetype.startsWith("image")) {
+    messageType = "image";
+  }
+
+  // 3️⃣ Send response
   return res.status(200).json(
     new ApiResponse(
       200,
-      { chat: formattedChat },
-      "Chat created/fetched successfully"
+      {
+        fileUrl: result.secure_url,
+        messageType,
+        public_id: result.public_id, // useful for delete later
+      },
+      "File uploaded successfully"
     )
   );
 });
 
-
-export { getChatMessages, getUserChats, createNewChat };
+export { 
+  getChatMessages, 
+  getUserChats, 
+  createNewChat, 
+  uploadMessageFile 
+};

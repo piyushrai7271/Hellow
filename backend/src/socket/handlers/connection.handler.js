@@ -3,7 +3,9 @@ import { registerTyping } from "./typing.handler.js";
 import { registerSeen } from "./seen.handler.js";
 import { registerOnlineUsers } from "./onlineUsers.handler.js";
 import { onlineUsers } from "../../utils/onlineUsers.js";
+import { registerDeleteMessage } from "./delete.handler.js";
 import User from "../../models/auth.model.js";
+
 
 const handleConnection = (io, socket) => {
   socket.on("error", (err) => {
@@ -26,6 +28,7 @@ const handleConnection = (io, socket) => {
   registerTyping(io, socket);
   registerSeen(io, socket);
   registerOnlineUsers(io, socket);
+  registerDeleteMessage(io, socket);
 
   socket.on("disconnect", async () => {
     onlineUsers.delete(userId);

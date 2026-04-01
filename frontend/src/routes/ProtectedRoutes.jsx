@@ -19,8 +19,13 @@ const ProtectedRoute = ({ children }) => {
     checkAuth();
   }, []);
 
-  if (isAuth === null) return <p>Loading...</p>;
-
+  if (isAuth === null) {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      <p className="text-gray-500">Checking authentication...</p>
+    </div>
+  );
+}
   return isAuth ? children : <Navigate to="/login" />;
 };
 

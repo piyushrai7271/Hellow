@@ -1,5 +1,20 @@
-const ChatHeader = ({ selectedChat, isTyping }) => {
+const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
   if (!selectedChat) return null;
+
+  const formatLastSeen = (time) => {
+    if (!time) return "Last seen recently";
+
+    const date = new Date(time);
+    const now = new Date();
+
+    const diff = Math.floor((now - date) / 1000);
+
+    if (diff < 60) return "Last seen just now";
+    if (diff < 3600) return `Last seen ${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `Last seen ${Math.floor(diff / 3600)} hrs ago`;
+
+    return `Last seen on ${date.toLocaleDateString()}`;
+  };
 
   return (
     <div className="p-4 border-b flex justify-between items-center bg-white shrink-0">
@@ -13,9 +28,12 @@ const ChatHeader = ({ selectedChat, isTyping }) => {
             {selectedChat.members[0]?.fullName}
           </p>
 
-          {/* ✅ TYPING INDICATOR */}
           <p className="text-xs text-gray-500">
-            {isTyping ? "Typing..." : "Last seen recently"}
+            {isTyping
+              ? "Typing..."
+              : isOnline
+              ? "🟢 Online"
+              : formatLastSeen(lastSeen)}
           </p>
         </div>
       </div>

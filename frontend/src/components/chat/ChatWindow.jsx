@@ -10,14 +10,56 @@ const ChatWindow = ({
   currentUserId,
 }) => {
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false); // ✅ NEW
-  const typingTimeoutRef = useRef(null); // ✅ NEW
+  const [isTyping, setIsTyping] = useState(false);
+
+  // ✅ NEW STATES
+  const [isOnline, setIsOnline] = useState(false);
+  const [lastSeen, setLastSeen] = useState(null);
+
+  const typingTimeoutRef = useRef(null);
   const bottomRef = useRef();
 
   // AUTO SCROLL
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // =========================
+  // ✅ CHECK USER STATUS
+  // =========================
+  useEffect(() => {
+    if (!socket || !selectedChat) return;
+
+    const userId = selectedChat.members[0]._id;
+
+    socket.emit("check-user-status", { userId });
+
+    socket.on("user-status", ({ userId: id, isOnline, lastSeen }) => {
+      if (id === userId) {
+        setIsOnline(isOnline);
+        setLastSeen(lastSeen);
+      }
+    });
+
+    socket.on("user-online", ({ userId: id }) => {
+      if (id === userId) {
+        setIsOnline(true);
+      }
+    });
+
+    socket.on("user-offline", ({ userId: id, lastSeen }) => {
+      if (id === userId) {
+        setIsOnline(false);
+        setLastSeen(lastSeen);
+      }
+    });
+
+    return () => {
+      socket.off("user-status");
+      socket.off("user-online");
+      socket.off("user-offline");
+    };
+  }, [socket, selectedChat]);
 
   // =========================
   // ✅ LISTEN TYPING EVENTS
@@ -66,14 +108,13 @@ const ChatWindow = ({
       message: input,
     });
 
-    // ✅ STOP TYPING AFTER SEND
     socket.emit("typing-stop", { toUserId });
 
     setInput("");
   };
 
   // =========================
-  // ✅ HANDLE INPUT CHANGE (TYPING)
+  // HANDLE TYPING
   // =========================
   const handleTyping = (value) => {
     setInput(value);
@@ -82,15 +123,12 @@ const ChatWindow = ({
 
     const toUserId = selectedChat.members[0]._id;
 
-    // START TYPING
     socket.emit("typing-start", { toUserId });
 
-    // CLEAR OLD TIMER
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // STOP AFTER 1.5s
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("typing-stop", { toUserId });
     }, 1500);
@@ -112,7 +150,12 @@ const ChatWindow = ({
     <div className="flex-1 w-full flex flex-col min-h-0">
 
       {/* HEADER */}
-      <ChatHeader selectedChat={selectedChat} isTyping={isTyping} />
+      <ChatHeader
+        selectedChat={selectedChat}
+        isTyping={isTyping}
+        isOnline={isOnline}
+        lastSeen={lastSeen}
+      />
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9] min-h-0">
@@ -134,12 +177,10 @@ const ChatWindow = ({
                     : "bg-white text-black rounded-2xl rounded-bl-none"
                 }`}
               >
-                {/* TEXT */}
                 {msg.messageType === "text" &&
                   msg.message &&
                   msg.message}
 
-                {/* IMAGE */}
                 {msg.messageType === "image" &&
                   msg.fileUrl && (
                     <img
@@ -148,7 +189,6 @@ const ChatWindow = ({
                     />
                   )}
 
-                {/* FILE */}
                 {msg.messageType === "file" &&
                   msg.fileUrl && (
                     <a
@@ -170,7 +210,7 @@ const ChatWindow = ({
       {/* INPUT */}
       <MessageInput
         input={input}
-        setInput={handleTyping} // ✅ IMPORTANT CHANGE
+        setInput={handleTyping}
         onSend={handleSend}
         socket={socket}
         selectedChat={selectedChat}

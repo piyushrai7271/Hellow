@@ -1,11 +1,11 @@
-const ChatHeader = ({ selectedChat }) => {
+const ChatHeader = ({ selectedChat, isTyping }) => {
   if (!selectedChat) return null;
 
   return (
     <div className="p-4 border-b flex justify-between items-center bg-white shrink-0">
       <div className="flex items-center gap-3">
         
-        {/* Avatar Placeholder */}
+        {/* Avatar */}
         <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
 
         <div>
@@ -13,8 +13,9 @@ const ChatHeader = ({ selectedChat }) => {
             {selectedChat.members[0]?.fullName}
           </p>
 
+          {/* ✅ TYPING INDICATOR */}
           <p className="text-xs text-gray-500">
-            Last seen recently
+            {isTyping ? "Typing..." : "Last seen recently"}
           </p>
         </div>
       </div>

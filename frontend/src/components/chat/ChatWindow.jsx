@@ -10,6 +10,8 @@ const ChatWindow = ({
   currentUserId,
 }) => {
   const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false); // ✅ NEW
+  const typingTimeoutRef = useRef(null); // ✅ NEW
   const bottomRef = useRef();
 
   // AUTO SCROLL
@@ -17,7 +19,29 @@ const ChatWindow = ({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // =========================
+  // ✅ LISTEN TYPING EVENTS
+  // =========================
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("user-typing", () => {
+      setIsTyping(true);
+    });
+
+    socket.on("user-stop-typing", () => {
+      setIsTyping(false);
+    });
+
+    return () => {
+      socket.off("user-typing");
+      socket.off("user-stop-typing");
+    };
+  }, [socket]);
+
+  // =========================
   // SEND MESSAGE
+  // =========================
   const handleSend = () => {
     if (!input.trim() || !selectedChat || !socket) return;
 
@@ -42,10 +66,37 @@ const ChatWindow = ({
       message: input,
     });
 
+    // ✅ STOP TYPING AFTER SEND
+    socket.emit("typing-stop", { toUserId });
+
     setInput("");
   };
 
-  // ✅ EMPTY STATE (BETTER UI)
+  // =========================
+  // ✅ HANDLE INPUT CHANGE (TYPING)
+  // =========================
+  const handleTyping = (value) => {
+    setInput(value);
+
+    if (!socket || !selectedChat) return;
+
+    const toUserId = selectedChat.members[0]._id;
+
+    // START TYPING
+    socket.emit("typing-start", { toUserId });
+
+    // CLEAR OLD TIMER
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // STOP AFTER 1.5s
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("typing-stop", { toUserId });
+    }, 1500);
+  };
+
+  // EMPTY STATE
   if (!selectedChat) {
     return (
       <div className="flex-1 w-full flex items-center justify-center bg-gray-50">
@@ -61,7 +112,7 @@ const ChatWindow = ({
     <div className="flex-1 w-full flex flex-col min-h-0">
 
       {/* HEADER */}
-      <ChatHeader selectedChat={selectedChat} />
+      <ChatHeader selectedChat={selectedChat} isTyping={isTyping} />
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9] min-h-0">
@@ -119,7 +170,7 @@ const ChatWindow = ({
       {/* INPUT */}
       <MessageInput
         input={input}
-        setInput={setInput}
+        setInput={handleTyping} // ✅ IMPORTANT CHANGE
         onSend={handleSend}
         socket={socket}
         selectedChat={selectedChat}

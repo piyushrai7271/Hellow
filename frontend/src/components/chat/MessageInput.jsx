@@ -31,9 +31,9 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   };
 
   return (
-<div className="p-3 border-t flex gap-2 shrink-0">
+    <div className="p-3 border-t flex gap-2 shrink-0">
 
-      {/* FILE BUTTON */}
+      {/* FILE */}
       <button
         onClick={() => fileRef.current.click()}
         className="text-xl hover:text-blue-500"
@@ -48,15 +48,15 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
         onChange={handleFile}
       />
 
-      {/* TEXT INPUT */}
+      {/* INPUT */}
       <input
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => setInput(e.target.value)} // ✅ now triggers typing logic
         className="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
         placeholder="Type a message..."
       />
 
-      {/* SEND BUTTON */}
+      {/* SEND */}
       <button
         onClick={onSend}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"

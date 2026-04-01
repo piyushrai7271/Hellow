@@ -28,24 +28,28 @@ const Register = () => {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-96">
-        <h2 className="text-xl font-semibold mb-4 text-center">Register</h2>
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600">
+      
+      <div className="bg-white/90 backdrop-blur-lg p-8 rounded-2xl shadow-xl w-96 border border-white/30">
+        
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Create Account ✨
+        </h2>
 
         <input
-          className="w-full border p-2 mb-2 rounded"
+          className="w-full border border-gray-300 p-2 mb-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           placeholder="Full Name"
           onChange={(e) => setForm({ ...form, fullName: e.target.value })}
         />
 
         <input
-          className="w-full border p-2 mb-2 rounded"
+          className="w-full border border-gray-300 p-2 mb-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           placeholder="Email"
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
 
         <input
-          className="w-full border p-2 mb-2 rounded"
+          className="w-full border border-gray-300 p-2 mb-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           placeholder="Mobile Number"
           onChange={(e) =>
             setForm({ ...form, mobileNumber: e.target.value })
@@ -53,13 +57,13 @@ const Register = () => {
         />
 
         <input
-          className="w-full border p-2 mb-2 rounded"
+          className="w-full border border-gray-300 p-2 mb-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           placeholder="Bio"
           onChange={(e) => setForm({ ...form, bio: e.target.value })}
         />
 
         <select
-          className="w-full border p-2 mb-2 rounded"
+          className="w-full border border-gray-300 p-2 mb-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           onChange={(e) => setForm({ ...form, gender: e.target.value })}
         >
           <option value="">Select Gender</option>
@@ -69,7 +73,7 @@ const Register = () => {
         </select>
 
         <input
-          className="w-full border p-2 mb-4 rounded"
+          className="w-full border border-gray-300 p-2 mb-5 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
           placeholder="Password"
           type="password"
           onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -77,17 +81,18 @@ const Register = () => {
 
         <button
           onClick={handleRegister}
-          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+          className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md"
         >
           Register
         </button>
 
         <p
-          className="text-sm text-center mt-3 cursor-pointer text-blue-500"
+          className="text-sm text-center mt-4 cursor-pointer text-indigo-600 hover:underline"
           onClick={() => navigate("/login")}
         >
           Already have an account? Login
         </p>
+
       </div>
     </div>
   );

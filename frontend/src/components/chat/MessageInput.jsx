@@ -31,8 +31,15 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   };
 
   return (
-    <div className="p-3 border-t flex gap-2">
-      <button onClick={() => fileRef.current.click()}>📎</button>
+<div className="p-3 border-t flex gap-2 shrink-0">
+
+      {/* FILE BUTTON */}
+      <button
+        onClick={() => fileRef.current.click()}
+        className="text-xl hover:text-blue-500"
+      >
+        📎
+      </button>
 
       <input
         type="file"
@@ -41,14 +48,19 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
         onChange={handleFile}
       />
 
+      {/* TEXT INPUT */}
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        className="border flex-1 p-2"
-        placeholder="Type message..."
+        className="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
+        placeholder="Type a message..."
       />
 
-      <button onClick={onSend} className="bg-blue-500 text-white px-4">
+      {/* SEND BUTTON */}
+      <button
+        onClick={onSend}
+        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+      >
         Send
       </button>
     </div>

@@ -26,22 +26,62 @@ const UserModal = ({ onClose, refreshChats }) => {
   };
 
   return (
-    <div className="absolute top-0 left-0 w-1/3 h-full bg-white p-3 z-10">
-      <h2 className="font-bold mb-3">Select User</h2>
-
-      {users.map((user) => (
-        <div
-          key={user._id}
-          onClick={() => createChat(user._id)}
-          className="p-2 border-b cursor-pointer"
-        >
-          {user.fullName}
+    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
+      {/* MODAL BOX */}
+      <div className="w-full max-w-md h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
+          <h2 className="font-semibold text-lg">Start New Chat</h2>
+          <button onClick={onClose} className="text-xl hover:opacity-80">
+            ✕
+          </button>
         </div>
-      ))}
 
-      <button onClick={onClose} className="mt-3">
-        Close
-      </button>
+        {/* SEARCH BAR (UI ONLY) */}
+        <div className="p-3 border-b">
+          <input
+            type="text"
+            placeholder="Search users..."
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+        </div>
+
+        {/* USER LIST */}
+        <div className="flex-1 overflow-y-auto">
+          {users.length === 0 ? (
+            <p className="text-center text-gray-500 mt-4">No users found</p>
+          ) : (
+            users.map((user) => (
+              <div
+                key={user._id}
+                onClick={() => createChat(user._id)}
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
+              >
+                {/* Avatar */}
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-semibold text-indigo-600">
+                  {user.fullName?.charAt(0).toUpperCase()}
+                </div>
+
+                {/* User Info */}
+                <div>
+                  <p className="font-medium text-sm">{user.fullName}</p>
+                  <p className="text-xs text-gray-500">Tap to chat</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="p-3 border-t text-center">
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-600 hover:text-black"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

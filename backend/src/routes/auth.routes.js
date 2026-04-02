@@ -10,6 +10,7 @@ import {
   uploadAvatar,
   updateAvatar,
   deleteAvatar,
+  updateProfileDetails,
   getAllUsers
 } from "../controllers/auth.controller.js";
 import { upload } from "../config/cloudinary.js";
@@ -28,6 +29,7 @@ router.get("/get-user-details", jwtValidation,userRateLimiter, getCurrentUser);
 router.post("/addAvatar", jwtValidation, upload.single("avatar"), uploadAvatar);
 router.put("/updateAvatar",jwtValidation,upload.single("avatar"),updateAvatar);
 router.delete("/deleteAvatar", jwtValidation, deleteAvatar);
+router.put("/update-profile",jwtValidation,updateProfileDetails);
 router.get("/all-users",getAllUsers);
 
 export default router;

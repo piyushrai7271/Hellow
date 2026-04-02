@@ -367,6 +367,45 @@ const deleteAvatar = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Avatar deleted successfully"));
 });
+const updateProfileDetails = asyncHandler(async (req, res) => {
+  const { fullName, bio } = req.body;
+  const userId = req.userId;
+
+  if (!userId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
+  // ✅ Build update object dynamically
+  const updateData = {};
+
+  if (fullName && fullName.trim() !== "") {
+    updateData.fullName = fullName.trim();
+  }
+
+  if (bio !== undefined) {
+    updateData.bio = bio.trim();
+  }
+
+  // ❌ If nothing to update
+  if (Object.keys(updateData).length === 0) {
+    throw new ApiError(400, "No valid fields to update");
+  }
+
+  // ✅ Single DB call (FAST)
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  ).select("-password -refreshToken"); // 🔥 SECURITY
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, updatedUser, "Profile updated successfully")
+  );
+});
 const getAllUsers = asyncHandler(async(req,res) =>{
   const users = await User.find().select("fullName email avatar");
 
@@ -374,6 +413,7 @@ const getAllUsers = asyncHandler(async(req,res) =>{
     new ApiResponse(200,users,"Users fetched successfully")
   )
 })
+
 export {
   registerUser,
   loginUser,
@@ -384,5 +424,6 @@ export {
   uploadAvatar,
   updateAvatar,
   deleteAvatar,
+  updateProfileDetails,
   getAllUsers,
 };

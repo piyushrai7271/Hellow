@@ -118,6 +118,7 @@ const ChatLayout = () => {
         <UserModal
           onClose={() => setShowUsers(false)}
           refreshChats={fetchChats}
+          currentUserId={currentUserId} // Add this
         />
       )}
     </div>

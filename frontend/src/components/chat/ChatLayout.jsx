@@ -6,16 +6,16 @@ import MiniSidebar from "./MiniSidebar.jsx";
 import ChatSidebar from "./ChatSidebar.jsx";
 import ChatWindow from "./ChatWindow.jsx";
 import UserModal from "./UserModal.jsx";
-import ProfilePanel from "./ProfilePanel.jsx"; // ✅ NEW
+import ProfilePanel from "./ProfilePanel.jsx";
 
 const ChatLayout = () => {
   const [socket, setSocket] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null); // ✅ FULL USER
+  const [currentUser, setCurrentUser] = useState(null); // ✅ GLOBAL USER
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showUsers, setShowUsers] = useState(false);
-  const [showProfile, setShowProfile] = useState(false); // ✅ NEW
+  const [showProfile, setShowProfile] = useState(false);
 
   // SOCKET
   useEffect(() => {
@@ -24,7 +24,7 @@ const ChatLayout = () => {
     setSocket(s);
   }, []);
 
-  // CURRENT USER
+  // GET CURRENT USER
   useEffect(() => {
     const getMe = async () => {
       const res = await apiFetch("/api/user/get-user-details");
@@ -66,7 +66,7 @@ const ChatLayout = () => {
 
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
-    setShowProfile(false); // ✅ CLOSE PROFILE
+    setShowProfile(false);
     fetchMessages(chat._id);
   };
 
@@ -106,11 +106,12 @@ const ChatLayout = () => {
         openProfile={() => setShowProfile(true)}
       />
 
-      {/* LEFT PANEL (CHAT OR PROFILE) */}
+      {/* LEFT PANEL */}
       <div className="hidden md:flex w-[300px] border-r flex-col min-h-0">
         {showProfile ? (
           <ProfilePanel
             user={currentUser}
+            setUser={setCurrentUser} // ✅ IMPORTANT
             closeProfile={() => setShowProfile(false)}
           />
         ) : (

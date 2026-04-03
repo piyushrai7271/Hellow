@@ -16,8 +16,8 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
       return (
         <img
           src={currentUser.avatar.url}
-          className="w-10 h-10 rounded-full object-cover cursor-pointer"
           onClick={openProfile}
+          className="w-10 h-10 rounded-full object-cover cursor-pointer border-2 border-transparent hover:border-green-400 transition"
         />
       );
     }
@@ -25,7 +25,7 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
     return (
       <div
         onClick={openProfile}
-        className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-semibold cursor-pointer"
+        className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-semibold cursor-pointer hover:bg-indigo-600 transition"
       >
         {currentUser?.fullName?.charAt(0).toUpperCase()}
       </div>
@@ -33,39 +33,46 @@ const MiniSidebar = ({ openUsers, currentUser, openProfile }) => {
   };
 
   return (
-    <div className="w-16 bg-[#0f172a] text-white flex flex-col items-center py-4 justify-between">
-
-      {/* TOP */}
+    <div className="w-16 bg-[#111b21] text-white flex flex-col items-center py-4 justify-between shadow-lg">
+      {/* TOP SECTION */}
       <div className="flex flex-col items-center gap-6">
-        <div className="text-2xl">💬</div>
+        {/* APP LOGO */}
+        <div className="text-2xl opacity-80 hover:opacity-100 transition cursor-default">
+          💬
+        </div>
 
+        {/* NEW CHAT */}
         <button
           onClick={openUsers}
-          className="bg-green-500 p-2 rounded-xl hover:bg-green-600 transition"
+          title="New Chat"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-700 active:scale-95 transition"
         >
           +
         </button>
       </div>
 
-      {/* BOTTOM */}
-      <div className="flex flex-col items-center gap-4">
-
-        <button className="p-2 rounded-lg hover:bg-white/10">
-          ⚙️
-        </button>
-
+      {/* BOTTOM SECTION */}
+      <div className="flex flex-col items-center gap-5">
+        {/* LOGOUT */}
         <button
           onClick={handleLogout}
-          className="p-2 rounded-lg hover:bg-red-500/20 text-red-400"
+          title="Logout"
+          className="w-10 h-10 flex items-center justify-center rounded-full text-red-400 hover:bg-red-500/20 hover:text-red-500 transition active:scale-95"
         >
-          🚪
+          ⏻
         </button>
 
-        {/* ✅ USER AVATAR */}
-        {renderAvatar()}
+        {/* USER AVATAR */}
+        <div className="relative group">
+          {renderAvatar()}
+
+          {/* SMALL ACTIVE DOT (optional WhatsApp feel) */}
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#111b21] rounded-full"></span>
+        </div>
       </div>
     </div>
   );
 };
 
 export default MiniSidebar;
+

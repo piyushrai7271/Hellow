@@ -1,16 +1,53 @@
 const ChatSidebar = ({ chats, onSelectChat }) => {
+  
+  const formatTime = (time) => {
+    if (!time) return "";
+
+    const date = new Date(time);
+    const now = new Date();
+
+    const diff = Math.floor((now - date) / 1000);
+
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hr`;
+
+    return date.toLocaleDateString();
+  };
+
+  const renderLastMessage = (msg) => {
+    if (!msg) return "No messages yet";
+
+    if (msg.messageType === "text" && msg.message) {
+      return msg.message;
+    }
+
+    if (msg.messageType === "image") {
+      return "📷 Photo";
+    }
+
+    if (msg.messageType === "file") {
+      return "📎 File";
+    }
+
+    if (msg.messageType === "audio") {
+      return "🎧 Audio";
+    }
+
+    return "No messages yet";
+  };
+
   return (
     <div className="hidden md:flex w-[300px] bg-white border-r flex-col">
 
-      {/* HEADER */}
       <div className="p-4 border-b font-semibold text-lg bg-white sticky top-0 z-10">
         Chats
       </div>
 
-      {/* CHAT LIST */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {chats.map((chat) => {
           const user = chat.members[0];
+          const lastMsg = chat.lastMessage;
 
           return (
             <div
@@ -19,11 +56,10 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
               className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-100 border-b transition"
             >
               
-              {/* ✅ AVATAR */}
+              {/* AVATAR */}
               {user?.avatar?.url ? (
                 <img
                   src={user.avatar.url}
-                  alt="avatar"
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
@@ -39,7 +75,12 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
                 </p>
 
                 <p className="text-sm text-gray-500 truncate">
-                  {chat.lastMessage?.message || "No messages yet"}
+                  {renderLastMessage(lastMsg)}
+                  {lastMsg?.createdAt && (
+                    <span className="ml-2 text-xs text-gray-400">
+                      • {formatTime(lastMsg.createdAt)}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>

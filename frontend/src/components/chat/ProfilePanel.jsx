@@ -3,7 +3,7 @@ import ChangePasswordModal from "../ProfilePanel/ChangePasswordModal.jsx";
 import EditProfileModal from "../ProfilePanel/EditProfileModel.jsx";
 import AvatarActions from "../ProfilePanel/AvatarActions.jsx";
 
-const ProfilePanel = ({ user, closeProfile }) => {
+const ProfilePanel = ({ user, setUser, closeProfile }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAvatarActions, setShowAvatarActions] = useState(false);
@@ -13,16 +13,14 @@ const ProfilePanel = ({ user, closeProfile }) => {
   return (
     <div className="flex flex-col h-full bg-white relative">
 
-      {/* HEADER */}
       <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="font-semibold text-lg">Profile</h2>
+        <h2 className="font-semibold text-2xl">Profile</h2>
         <button onClick={closeProfile}>✕</button>
       </div>
 
-      {/* CONTENT */}
       <div className="flex flex-col items-center p-6 gap-4">
 
-        {/* ✅ AVATAR WITH CLICK */}
+        {/* AVATAR */}
         <div
           className="relative cursor-pointer"
           onClick={() => setShowAvatarActions(true)}
@@ -37,34 +35,33 @@ const ProfilePanel = ({ user, closeProfile }) => {
               {user.fullName?.charAt(0).toUpperCase()}
             </div>
           )}
-
-          {/* EDIT ICON */}
           <div className="absolute bottom-0 right-0 bg-black text-white text-xs px-2 py-1 rounded-full">
             ✏️
           </div>
         </div>
 
-        {/* NAME */}
-        <h3 className="text-lg font-semibold">{user.fullName}</h3>
+        <h3 className="text-2xl font-semibold">{user.fullName}</h3>
 
-        {/* BIO */}
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-lg font-semibold text-gray-700">
+          {user.gender || "Gender not set"}
+        </p>
+
+        <p className="text-sm text-gray-900 text-center">
           {user.bio || "No bio added"}
         </p>
 
-        {/* ACTIONS */}
         <div className="w-full mt-4 flex flex-col gap-3">
 
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="p-2 border rounded-lg hover:bg-gray-100"
+            className="p-2 border rounded-lg hover:bg-gray-200"
           >
             Change Password
           </button>
 
           <button
             onClick={() => setShowEditModal(true)}
-            className="p-2 border rounded-lg hover:bg-gray-100"
+            className="p-2 border rounded-lg hover:bg-gray-200"
           >
             Edit Profile
           </button>
@@ -72,25 +69,24 @@ const ProfilePanel = ({ user, closeProfile }) => {
         </div>
       </div>
 
-      {/* ✅ AVATAR ACTIONS MODAL */}
+      {/* MODALS */}
       {showAvatarActions && (
         <AvatarActions
-          user={user}
           onClose={() => setShowAvatarActions(false)}
+          setUser={setUser} // ✅ IMPORTANT
         />
       )}
 
-      {/* ✅ PASSWORD MODAL */}
       {showPasswordModal && (
         <ChangePasswordModal
           onClose={() => setShowPasswordModal(false)}
         />
       )}
 
-      {/* ✅ EDIT MODAL */}
       {showEditModal && (
         <EditProfileModal
           user={user}
+          setUser={setUser} // ✅ IMPORTANT
           onClose={() => setShowEditModal(false)}
         />
       )}

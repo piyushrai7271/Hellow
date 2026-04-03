@@ -1,46 +1,109 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   const fileRef = useRef();
+  const [uploading, setUploading] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file || !selectedChat) return;
 
-    const formData = new FormData();
-    formData.append("message", file);
+    try {
+      setUploading(true);
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/chat/upload-message-file`,
-      {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      const formData = new FormData();
+      formData.append("message", file);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/chat/upload-message-file`,
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        socket.emit("private-message", {
+          toUserId: selectedChat.members[0]._id,
+          messageType: data.data.messageType,
+          fileUrl: data.data.fileUrl,
+        });
+      } else {
+        alert("Upload failed");
       }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      socket.emit("private-message", {
-        toUserId: selectedChat.members[0]._id,
-        messageType: data.data.messageType,
-        fileUrl: data.data.fileUrl,
-      });
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Something went wrong");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  return (
-    <div className="p-3 border-t flex gap-2 shrink-0">
+  // ✅ Handle menu click
+  const handleSelectType = (type) => {
+    if (!fileRef.current) return;
 
-      {/* FILE */}
+    if (type === "media") {
+      fileRef.current.accept = "image/*,video/*";
+    } else if (type === "document") {
+      fileRef.current.accept = ".pdf,.doc,.docx,.txt";
+    } else if (type === "audio") {
+      fileRef.current.accept = "audio/*";
+    }
+
+    fileRef.current.click();
+    setShowMenu(false);
+  };
+
+  return (
+    <div className="relative p-3 border-t flex gap-2 shrink-0">
+
+      {/* ➕ BUTTON */}
       <button
-        onClick={() => fileRef.current.click()}
-        className="text-xl hover:text-blue-500"
+        onClick={() => setShowMenu((prev) => !prev)}
+        disabled={uploading}
+        className={`text-xl transition ${
+          uploading
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:text-blue-500"
+        }`}
       >
-        📎
+        {uploading ? "⏳" : "➕"}
       </button>
 
+      {/* 📂 MENU */}
+      {showMenu && (
+        <div className="absolute bottom-14 left-3 bg-white shadow-lg rounded-xl p-2 w-48 z-50 animate-fadeIn">
+
+          <div
+            onClick={() => handleSelectType("media")}
+            className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+          >
+            🖼️ Photos & Videos
+          </div>
+
+          <div
+            onClick={() => handleSelectType("document")}
+            className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+          >
+            📄 Document
+          </div>
+
+          <div
+            onClick={() => handleSelectType("audio")}
+            className="p-2 hover:bg-gray-100 cursor-pointer rounded"
+          >
+            🎧 Audio
+          </div>
+        </div>
+      )}
+
+      {/* FILE INPUT */}
       <input
         type="file"
         hidden
@@ -48,18 +111,23 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
         onChange={handleFile}
       />
 
-      {/* INPUT */}
+      {/* TEXT INPUT */}
       <input
         value={input}
-        onChange={(e) => setInput(e.target.value)} // ✅ now triggers typing logic
+        onChange={(e) => setInput(e.target.value)}
         className="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
         placeholder="Type a message..."
       />
 
-      {/* SEND */}
+      {/* SEND BUTTON */}
       <button
         onClick={onSend}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+        disabled={uploading}
+        className={`px-4 py-2 rounded-lg text-white transition ${
+          uploading
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 hover:bg-blue-600"
+        }`}
       >
         Send
       </button>

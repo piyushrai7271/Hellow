@@ -368,7 +368,7 @@ const deleteAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Avatar deleted successfully"));
 });
 const updateProfileDetails = asyncHandler(async (req, res) => {
-  const { fullName, bio } = req.body;
+  const { fullName, bio, gender } = req.body;
   const userId = req.userId;
 
   if (!userId) {
@@ -384,6 +384,12 @@ const updateProfileDetails = asyncHandler(async (req, res) => {
 
   if (bio !== undefined) {
     updateData.bio = bio.trim();
+  }
+
+  if (!["Male", "Female", "Other"].includes(gender)) {
+    throw new ApiError(400, "Please provide valid gender");
+  } else{
+    updateData.gender = gender.trim();
   }
 
   // ❌ If nothing to update

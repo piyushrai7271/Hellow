@@ -401,7 +401,7 @@ const updateProfileDetails = asyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { returnDocument:"after", runValidators: true }
   ).select("-password -refreshToken"); // 🔥 SECURITY
 
   if (!updatedUser) {

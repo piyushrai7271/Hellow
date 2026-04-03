@@ -3,6 +3,7 @@ import Chat from "../models/chat.model.js";
 import { asyncHandler } from "../middlewares/error.middleware.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import { uploadOnCloudinary } from "../config/cloudinary.js";
 import mongoose from "mongoose";
 
 const getChatMessages = asyncHandler(async (req, res) => {
@@ -79,7 +80,7 @@ const getUserChats = asyncHandler(async (req, res) => {
     .populate("members", "fullName avatar")
     .populate({
       path: "lastMessage",
-      select: "message senderId createdAt",
+      select: "message messageType fileUrl senderId createdAt", // ✅ FIXED
       populate: {
         path: "senderId",
         select: "fullName",
@@ -89,14 +90,13 @@ const getUserChats = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limit);
 
-  // 3 Total count (for pagination UI)
+  // 3 Total count
   const totalChats = await Chat.countDocuments({ members: userId });
 
   // 4 Format response
   const formattedChats = chats.map((chat) => {
     let otherMembers = chat.members;
 
-    // remove current user only for private chat
     if (!chat.isGroupChat) {
       otherMembers = chat.members.filter(
         (member) => member._id.toString() !== userId.toString()
@@ -107,12 +107,12 @@ const getUserChats = asyncHandler(async (req, res) => {
       _id: chat._id,
       isGroupChat: chat.isGroupChat,
       members: otherMembers,
-      lastMessage: chat.lastMessage,
+      lastMessage: chat.lastMessage, // now contains messageType ✅
       updatedAt: chat.updatedAt,
     };
   });
 
-  // 5️⃣ Send response
+  // 5 Response
   return res.status(200).json(
     new ApiResponse(
       200,
@@ -192,38 +192,42 @@ const createNewChat = asyncHandler(async (req, res) => {
     );
 });
 const uploadMessageFile = asyncHandler(async (req, res) => {
-  const userId = req.userId;
+  try {
+    if (!req.file) {
+      throw new ApiError(400, "Message file is missing");
+    }
 
-  if (!req.file) {
-    throw new ApiError(400, "Message file is missing");
+    // ✅ Upload
+    const result = await uploadOnCloudinary(req.file, "chat-files");
+
+    if (!result) {
+      throw new ApiError(500, "File upload failed");
+    }
+
+    // ✅ Detect type
+    let messageType = "file";
+
+    if (req.file.mimetype.startsWith("image")) {
+      messageType = "image";
+    } else if (req.file.mimetype.startsWith("video")) {
+      messageType = "video";
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          fileUrl: result.secure_url,
+          messageType,
+          public_id: result.public_id,
+        },
+        "File uploaded successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Upload Message Error:", error.message);
+    throw new ApiError(500, error.message || "Upload failed");
   }
-
-  // 1️⃣ Upload to Cloudinary
-  const result = await uploadOnCloudinary(req.file, "chat-files");
-
-  if (!result) {
-    throw new ApiError(500, "File upload failed");
-  }
-
-  // 2️⃣ Decide message type
-  let messageType = "file";
-
-  if (req.file.mimetype.startsWith("image")) {
-    messageType = "image";
-  }
-
-  // 3️⃣ Send response
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        fileUrl: result.secure_url,
-        messageType,
-        public_id: result.public_id, // useful for delete later
-      },
-      "File uploaded successfully"
-    )
-  );
 });
 
 export { getChatMessages, getUserChats, createNewChat, uploadMessageFile };

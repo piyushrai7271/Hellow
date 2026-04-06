@@ -7,10 +7,9 @@ const registerDeleteMessage = (io, socket) => {
 
     try {
       const message = await Message.findById(messageId);
-
       if (!message) return;
 
-      // ❌ Security check
+      // 🔒 Only sender can delete
       if (message.senderId.toString() !== socket.userId.toString()) {
         return;
       }
@@ -36,6 +35,7 @@ const registerDeleteMessage = (io, socket) => {
         await Message.findByIdAndUpdate(messageId, {
           isDeleted: true,
           message: "This message was deleted",
+          fileUrl: "", // 🔥 important
         });
 
         const chat = await Chat.findById(message.chatId);
@@ -47,7 +47,6 @@ const registerDeleteMessage = (io, socket) => {
           });
         });
       }
-
     } catch (error) {
       console.error("Delete message error:", error);
     }

@@ -25,33 +25,39 @@ const getChatMessages = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Chat not found or access denied");
   }
 
-  // 3 Pagination (safe limits)
-  const limit = Math.min(parseInt(req.query.limit) || 20, 50); // max 50
+  // 3 Pagination
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const skip = (page - 1) * limit;
 
-  // 4 Fetch messages
-  const messages = await Message.find({ chatId })
-    .select("senderId message messageType fileUrl createdAt") // only needed fields
+  // ✅ 4 Fetch messages (IMPORTANT FIX)
+  const messages = await Message.find({
+    chatId,
+    deletedFor: { $ne: userId }, // 🔥 hide "delete for me"
+  })
+    .select("senderId message messageType fileUrl createdAt isDeleted")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .populate("senderId", "fullName avatar");
 
-  // 5 Total count (optional but pro-level)
-  const totalMessages = await Message.countDocuments({ chatId });
+  const totalMessages = await Message.countDocuments({
+    chatId,
+    deletedFor: { $ne: userId },
+  });
 
-  // 6 Normalize for frontend
+  // ✅ 5 Normalize
   const formattedMessages = messages.reverse().map((msg) => ({
     messageId: msg._id,
-    message: msg.message,
-    messageType: msg.messageType || "text",
-    fileUrl: msg.fileUrl || "",
-    fromUserId: msg.senderId?._id?.toString() || msg.senderId.toString(),
+    message: msg.isDeleted ? "This message was deleted" : msg.message,
+    messageType: msg.isDeleted ? "text" : msg.messageType || "text",
+    fileUrl: msg.isDeleted ? "" : msg.fileUrl || "",
+    fromUserId:
+      msg.senderId?._id?.toString() || msg.senderId.toString(),
     createdAt: msg.createdAt,
+    isDeleted: msg.isDeleted || false, // 🔥 NEW
   }));
 
-  // 7 Response
   return res.status(200).json(
     new ApiResponse(
       200,

@@ -1,4 +1,4 @@
-const MessageMenu = ({ isOpen, onClose, onDelete, messageId }) => {
+const MessageMenu = ({ isOpen, onDelete, onEdit, messageId }) => {
   if (!isOpen) return null;
 
   return (
@@ -6,6 +6,14 @@ const MessageMenu = ({ isOpen, onClose, onDelete, messageId }) => {
       onClick={(e) => e.stopPropagation()}
       className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-50 overflow-hidden"
     >
+      {/* ✏️ Edit */}
+      <button
+        onClick={() => onEdit(messageId)}
+        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-200 transition"
+      >
+        Edit
+      </button>
+
       {/* Delete for me */}
       <button
         onClick={() => onDelete(messageId, "delete-for-me")}

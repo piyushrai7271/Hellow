@@ -1,6 +1,6 @@
 import express from "express";
 import jwtValidation from "../middlewares/auth.middleware.js";
-import { uploadMessage } from "../middlewares/uploadMessage.middleware.js";
+import {upload} from "../config/cloudinary.js";
 import {
   getChatMessages,
   getUserChats,
@@ -15,7 +15,7 @@ router.post("/create-new-chat", jwtValidation, createNewChat);
 router.post(
   "/upload-message-file",
   jwtValidation,
-  uploadMessage.single("message"),
+  upload.single("message"),
   uploadMessageFile
 );
 

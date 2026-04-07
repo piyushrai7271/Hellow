@@ -203,21 +203,29 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Message file is missing");
     }
 
-    // ✅ Upload
+    // console.log("FILE DEBUG:", {
+    //   name: req.file.originalname,
+    //   type: req.file.mimetype,
+    //   size: req.file.size,
+    // });
+
     const result = await uploadOnCloudinary(req.file, "chat-files");
 
     if (!result) {
       throw new ApiError(500, "File upload failed");
     }
 
-    // ✅ Detect type
     let messageType = "file";
 
     if (req.file.mimetype.startsWith("image")) {
       messageType = "image";
     } else if (req.file.mimetype.startsWith("video")) {
       messageType = "video";
+    } else if (req.file.mimetype.startsWith("audio")) {
+      messageType = "audio";
     }
+
+    // console.log("UPLOAD RESULT:", result); 
 
     return res.status(200).json(
       new ApiResponse(
@@ -231,7 +239,7 @@ const uploadMessageFile = asyncHandler(async (req, res) => {
       )
     );
   } catch (error) {
-    console.error("Upload Message Error:", error.message);
+    console.error("Upload Error:", error?.message || error);
     throw new ApiError(500, error.message || "Upload failed");
   }
 });

@@ -14,16 +14,13 @@ const ChatWindow = ({
   const [input, setInput] = useState("");
   const [activeMenu, setActiveMenu] = useState(null);
 
-  // ✏️ EDIT STATE
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
 
-  // ✅ NEW: TYPING STATE
   const [isTyping, setIsTyping] = useState(false);
 
   const bottomRef = useRef();
 
-  // ✅ GET OTHER USER
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
@@ -40,7 +37,7 @@ const ChatWindow = ({
   }, []);
 
   // =========================
-  // ✅ NEW: TYPING LISTENER
+  // ✅ TYPING LISTENER
   // =========================
   useEffect(() => {
     if (!socket || !selectedChat) return;
@@ -98,7 +95,7 @@ const ChatWindow = ({
   }, [socket]);
 
   // =========================
-  // ✏️ EDIT LISTENER
+  // EDIT LISTENER
   // =========================
   useEffect(() => {
     if (!socket) return;
@@ -125,7 +122,7 @@ const ChatWindow = ({
   };
 
   // =========================
-  // START EDIT
+  // EDIT
   // =========================
   const handleEditStart = (msg) => {
     setEditingMsgId(msg.messageId);
@@ -133,9 +130,6 @@ const ChatWindow = ({
     setActiveMenu(null);
   };
 
-  // =========================
-  // SAVE EDIT
-  // =========================
   const handleEditSave = (messageId) => {
     if (!editText.trim()) return;
 
@@ -149,21 +143,14 @@ const ChatWindow = ({
   };
 
   // =========================
-  // SEND MESSAGE
+  // ✅ FIXED SEND MESSAGE (NO DUPLICATE)
   // =========================
   const handleSend = () => {
     if (!input.trim() || !selectedChat || !socket) return;
 
     const toUserId = selectedChat.members[0]._id;
 
-    const tempMsg = {
-      messageId: Date.now().toString(),
-      message: input,
-      messageType: "text",
-      fromUserId: currentUserId,
-    };
-
-    setMessages((prev) => [...prev, tempMsg]);
+    // ❌ REMOVED TEMP MESSAGE (THIS CAUSED DUPLICATE)
 
     socket.emit("private-message", {
       toUserId,
@@ -188,7 +175,7 @@ const ChatWindow = ({
         selectedChat={selectedChat}
         isOnline={userStatus.isOnline}
         lastSeen={userStatus.lastSeen}
-        isTyping={isTyping} // ✅ NEW
+        isTyping={isTyping}
       />
 
       {/* MESSAGES */}

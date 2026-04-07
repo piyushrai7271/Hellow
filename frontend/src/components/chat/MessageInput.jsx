@@ -5,6 +5,10 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   const [uploading, setUploading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  // ✅ NEW: typing timeout ref
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file || !selectedChat) return;
@@ -44,6 +48,32 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
     }
   };
 
+  // ✅ NEW: HANDLE TYPING
+  const handleTyping = (value) => {
+    setInput(value);
+
+    if (!socket || !selectedChat) return;
+
+    const toUserId = selectedChat.members[0]._id;
+
+    // 🔥 send typing-start only once
+    if (!isTypingRef.current) {
+      socket.emit("typing-start", { toUserId });
+      isTypingRef.current = true;
+    }
+
+    // 🧠 reset timer
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // ⏱️ stop typing after 1.5s of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("typing-stop", { toUserId });
+      isTypingRef.current = false;
+    }, 1500);
+  };
+
   // ✅ Handle menu click
   const handleSelectType = (type) => {
     if (!fileRef.current) return;
@@ -58,6 +88,18 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
 
     fileRef.current.click();
     setShowMenu(false);
+  };
+
+  // ✅ UPDATED SEND (stop typing immediately)
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+
+    const toUserId = selectedChat.members[0]._id;
+
+    socket?.emit("typing-stop", { toUserId });
+    isTypingRef.current = false;
+
+    onSend();
   };
 
   return (
@@ -114,14 +156,14 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       {/* TEXT INPUT */}
       <input
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => handleTyping(e.target.value)} // ✅ UPDATED
         className="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
         placeholder="Type a message..."
       />
 
       {/* SEND BUTTON */}
       <button
-        onClick={onSend}
+        onClick={handleSendMessage} // ✅ UPDATED
         disabled={uploading}
         className={`px-4 py-2 rounded-lg text-white transition ${
           uploading

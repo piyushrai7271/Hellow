@@ -1,7 +1,28 @@
+import { useEffect, useState } from "react";
+
 const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
   if (!selectedChat) return null;
 
   const user = selectedChat.members[0];
+
+  // ✅ NEW: typing animation state
+  const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    if (!isTyping) {
+      setDots("");
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setDots((prev) => {
+        if (prev.length === 3) return "";
+        return prev + ".";
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isTyping]);
 
   const formatLastSeen = (time) => {
     if (!time) return "Last seen recently";
@@ -23,7 +44,6 @@ const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
       
       <div className="flex items-center gap-3">
 
-        {/* ✅ AVATAR */}
         {user?.avatar?.url ? (
           <img
             src={user.avatar.url}
@@ -36,13 +56,12 @@ const ChatHeader = ({ selectedChat, isTyping, isOnline, lastSeen }) => {
           </div>
         )}
 
-        {/* NAME + STATUS */}
         <div>
           <p className="font-semibold">{user?.fullName}</p>
 
           <p className="text-xs text-gray-500">
             {isTyping
-              ? "Typing..."
+              ? `Typing${dots}` // ✅ animated
               : isOnline
               ? "🟢 Online"
               : formatLastSeen(lastSeen)}

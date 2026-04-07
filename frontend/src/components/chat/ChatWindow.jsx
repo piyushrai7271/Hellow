@@ -9,6 +9,7 @@ const ChatWindow = ({
   messages = [],
   setMessages,
   currentUserId,
+  userStatusMap,
 }) => {
   const [input, setInput] = useState("");
   const [activeMenu, setActiveMenu] = useState(null);
@@ -17,7 +18,14 @@ const ChatWindow = ({
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [editText, setEditText] = useState("");
 
+  // ✅ NEW: TYPING STATE
+  const [isTyping, setIsTyping] = useState(false);
+
   const bottomRef = useRef();
+
+  // ✅ GET OTHER USER
+  const otherUserId = selectedChat?.members?.[0]?._id;
+  const userStatus = userStatusMap?.[otherUserId] || {};
 
   // AUTO SCROLL
   useEffect(() => {
@@ -30,6 +38,33 @@ const ChatWindow = ({
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
   }, []);
+
+  // =========================
+  // ✅ NEW: TYPING LISTENER
+  // =========================
+  useEffect(() => {
+    if (!socket || !selectedChat) return;
+
+    const handleTyping = ({ userId }) => {
+      if (userId === otherUserId) {
+        setIsTyping(true);
+      }
+    };
+
+    const handleStopTyping = ({ userId }) => {
+      if (userId === otherUserId) {
+        setIsTyping(false);
+      }
+    };
+
+    socket.on("user-typing", handleTyping);
+    socket.on("user-stop-typing", handleStopTyping);
+
+    return () => {
+      socket.off("user-typing", handleTyping);
+      socket.off("user-stop-typing", handleStopTyping);
+    };
+  }, [socket, selectedChat, otherUserId]);
 
   // =========================
   // DELETE LISTENER
@@ -149,7 +184,12 @@ const ChatWindow = ({
   return (
     <div className="flex flex-col h-full w-full">
       {/* HEADER */}
-      <ChatHeader selectedChat={selectedChat} />
+      <ChatHeader
+        selectedChat={selectedChat}
+        isOnline={userStatus.isOnline}
+        lastSeen={userStatus.lastSeen}
+        isTyping={isTyping} // ✅ NEW
+      />
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9]">
@@ -162,7 +202,6 @@ const ChatWindow = ({
               className={`mb-4 flex ${isMe ? "justify-end" : "justify-start"}`}
             >
               <div className="relative group">
-                {/* MESSAGE BOX */}
                 <div
                   className={`px-4 py-2 max-w-xs break-words shadow ${
                     isMe
@@ -175,7 +214,6 @@ const ChatWindow = ({
                       This message was deleted
                     </p>
                   ) : editingMsgId === msg.messageId ? (
-                    // ✨ PROFESSIONAL EDIT UI
                     <div className="bg-white p-2 rounded-lg shadow-inner">
                       <input
                         value={editText}
@@ -203,8 +241,6 @@ const ChatWindow = ({
                   ) : (
                     <>
                       {msg.message}
-
-                      {/* edited label */}
                       {msg.isEdited && (
                         <span className="text-[10px] ml-1 opacity-70">
                           (edited)
@@ -214,7 +250,6 @@ const ChatWindow = ({
                   )}
                 </div>
 
-                {/* MENU BUTTON */}
                 {isMe && !msg.isDeleted && (
                   <button
                     onClick={(e) => {
@@ -229,7 +264,6 @@ const ChatWindow = ({
                   </button>
                 )}
 
-                {/* MENU */}
                 <MessageMenu
                   isOpen={activeMenu === msg.messageId}
                   messageId={msg.messageId}

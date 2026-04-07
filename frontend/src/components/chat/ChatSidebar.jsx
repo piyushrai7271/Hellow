@@ -1,5 +1,5 @@
-const ChatSidebar = ({ chats, onSelectChat }) => {
-  
+const ChatSidebar = ({ chats, onSelectChat, typingUsers = {} }) => {
+
   const formatTime = (time) => {
     if (!time) return "";
 
@@ -15,24 +15,18 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
     return date.toLocaleDateString();
   };
 
-  const renderLastMessage = (msg) => {
+  const renderLastMessage = (msg, isTyping) => {
+    if (isTyping) return "Typing..."; // ✅ NEW
+
     if (!msg) return "No messages yet";
 
     if (msg.messageType === "text" && msg.message) {
       return msg.message;
     }
 
-    if (msg.messageType === "image") {
-      return "📷 Photo";
-    }
-
-    if (msg.messageType === "file") {
-      return "📎 File";
-    }
-
-    if (msg.messageType === "audio") {
-      return "🎧 Audio";
-    }
+    if (msg.messageType === "image") return "📷 Photo";
+    if (msg.messageType === "file") return "📎 File";
+    if (msg.messageType === "audio") return "🎧 Audio";
 
     return "No messages yet";
   };
@@ -49,6 +43,8 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
           const user = chat.members[0];
           const lastMsg = chat.lastMessage;
 
+          const isTyping = typingUsers[user?._id]; // ✅ NEW
+
           return (
             <div
               key={chat._id}
@@ -56,7 +52,6 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
               className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-100 border-b transition"
             >
               
-              {/* AVATAR */}
               {user?.avatar?.url ? (
                 <img
                   src={user.avatar.url}
@@ -68,15 +63,13 @@ const ChatSidebar = ({ chats, onSelectChat }) => {
                 </div>
               )}
 
-              {/* TEXT */}
               <div className="flex-1">
-                <p className="font-medium">
-                  {user?.fullName}
-                </p>
+                <p className="font-medium">{user?.fullName}</p>
 
                 <p className="text-sm text-gray-500 truncate">
-                  {renderLastMessage(lastMsg)}
-                  {lastMsg?.createdAt && (
+                  {renderLastMessage(lastMsg, isTyping)}
+
+                  {!isTyping && lastMsg?.createdAt && (
                     <span className="ml-2 text-xs text-gray-400">
                       • {formatTime(lastMsg.createdAt)}
                     </span>

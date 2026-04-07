@@ -10,12 +10,17 @@ import ProfilePanel from "./ProfilePanel.jsx";
 
 const ChatLayout = () => {
   const [socket, setSocket] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null); // ✅ GLOBAL USER
+  const [currentUser, setCurrentUser] = useState(null);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [showUsers, setShowUsers] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
+  const [userStatusMap, setUserStatusMap] = useState({});
+
+  // ✅ NEW: GLOBAL TYPING STATE
+  const [typingUsers, setTypingUsers] = useState({});
 
   // SOCKET
   useEffect(() => {
@@ -68,9 +73,14 @@ const ChatLayout = () => {
     setSelectedChat(chat);
     setShowProfile(false);
     fetchMessages(chat._id);
+
+    const otherUserId = chat.members[0]._id;
+    socket?.emit("check-user-status", { userId: otherUserId });
   };
 
-  // SOCKET LISTENER
+  // =========================
+  // MESSAGE LISTENER
+  // =========================
   useEffect(() => {
     if (!socket) return;
 
@@ -96,33 +106,99 @@ const ChatLayout = () => {
     };
   }, [socket, selectedChat]);
 
+  // =========================
+  // STATUS LISTENERS
+  // =========================
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOnline = ({ userId }) => {
+      setUserStatusMap((prev) => ({
+        ...prev,
+        [userId]: { isOnline: true },
+      }));
+    };
+
+    const handleOffline = ({ userId, lastSeen }) => {
+      setUserStatusMap((prev) => ({
+        ...prev,
+        [userId]: { isOnline: false, lastSeen },
+      }));
+    };
+
+    const handleStatus = ({ userId, isOnline, lastSeen }) => {
+      setUserStatusMap((prev) => ({
+        ...prev,
+        [userId]: { isOnline, lastSeen },
+      }));
+    };
+
+    socket.on("user-online", handleOnline);
+    socket.on("user-offline", handleOffline);
+    socket.on("user-status", handleStatus);
+
+    return () => {
+      socket.off("user-online", handleOnline);
+      socket.off("user-offline", handleOffline);
+      socket.off("user-status", handleStatus);
+    };
+  }, [socket]);
+
+  // =========================
+  // ✅ NEW: TYPING LISTENERS
+  // =========================
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTyping = ({ userId }) => {
+      setTypingUsers((prev) => ({
+        ...prev,
+        [userId]: true,
+      }));
+    };
+
+    const handleStopTyping = ({ userId }) => {
+      setTypingUsers((prev) => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
+    };
+
+    socket.on("user-typing", handleTyping);
+    socket.on("user-stop-typing", handleStopTyping);
+
+    return () => {
+      socket.off("user-typing", handleTyping);
+      socket.off("user-stop-typing", handleStopTyping);
+    };
+  }, [socket]);
+
   return (
     <div className="flex h-screen w-full overflow-hidden">
 
-      {/* MINI SIDEBAR */}
       <MiniSidebar
         openUsers={() => setShowUsers(true)}
         currentUser={currentUser}
         openProfile={() => setShowProfile(true)}
       />
 
-      {/* LEFT PANEL */}
       <div className="hidden md:flex w-[300px] border-r flex-col min-h-0">
         {showProfile ? (
           <ProfilePanel
             user={currentUser}
-            setUser={setCurrentUser} // ✅ IMPORTANT
+            setUser={setCurrentUser}
             closeProfile={() => setShowProfile(false)}
           />
         ) : (
           <ChatSidebar
             chats={chats}
             onSelectChat={handleSelectChat}
+            typingUsers={typingUsers} // ✅ NEW
           />
         )}
       </div>
 
-      {/* CHAT WINDOW */}
       <div className="flex-1 min-h-0 flex flex-col">
         <ChatWindow
           socket={socket}
@@ -130,10 +206,10 @@ const ChatLayout = () => {
           messages={messages}
           setMessages={setMessages}
           currentUserId={currentUser?._id}
+          userStatusMap={userStatusMap}
         />
       </div>
 
-      {/* MODAL */}
       {showUsers && (
         <UserModal
           onClose={() => setShowUsers(false)}

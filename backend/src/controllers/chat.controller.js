@@ -75,18 +75,16 @@ const getChatMessages = asyncHandler(async (req, res) => {
 const getUserChats = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  // 1 Pagination (safe)
   const limit = Math.min(parseInt(req.query.limit) || 20, 50);
   const page = Math.max(parseInt(req.query.page) || 1, 1);
   const skip = (page - 1) * limit;
 
-  // 2 Fetch chats
   const chats = await Chat.find({ members: userId })
     .select("members isGroupChat lastMessage updatedAt")
     .populate("members", "fullName avatar")
     .populate({
       path: "lastMessage",
-      select: "message messageType fileUrl senderId createdAt", // ✅ FIXED
+      select: "message messageType fileUrl senderId createdAt",
       populate: {
         path: "senderId",
         select: "fullName",
@@ -96,29 +94,37 @@ const getUserChats = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limit);
 
-  // 3 Total count
   const totalChats = await Chat.countDocuments({ members: userId });
 
-  // 4 Format response
-  const formattedChats = chats.map((chat) => {
-    let otherMembers = chat.members;
+  // ✅ ADD UNREAD COUNT
+  const formattedChats = await Promise.all(
+    chats.map(async (chat) => {
+      let otherMembers = chat.members;
 
-    if (!chat.isGroupChat) {
-      otherMembers = chat.members.filter(
-        (member) => member._id.toString() !== userId.toString()
-      );
-    }
+      if (!chat.isGroupChat) {
+        otherMembers = chat.members.filter(
+          (member) => member._id.toString() !== userId.toString()
+        );
+      }
 
-    return {
-      _id: chat._id,
-      isGroupChat: chat.isGroupChat,
-      members: otherMembers,
-      lastMessage: chat.lastMessage, // now contains messageType ✅
-      updatedAt: chat.updatedAt,
-    };
-  });
+      // 🔥 COUNT UNREAD
+      const unreadCount = await Message.countDocuments({
+        chatId: chat._id,
+        senderId: { $ne: userId },
+        seenBy: { $ne: userId },
+      });
 
-  // 5 Response
+      return {
+        _id: chat._id,
+        isGroupChat: chat.isGroupChat,
+        members: otherMembers,
+        lastMessage: chat.lastMessage,
+        updatedAt: chat.updatedAt,
+        unreadCount, // ✅ NEW
+      };
+    })
+  );
+
   return res.status(200).json(
     new ApiResponse(
       200,

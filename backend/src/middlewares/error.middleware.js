@@ -43,7 +43,7 @@ const errorMiddleware = (err, req, res, next) => {
   }
 
   // Show stack only in development
-  if (process.env.NODE_ENV="development") {
+  if (process.env.NODE_ENV === "development") {
     response.stack = err.stack;
   }
 

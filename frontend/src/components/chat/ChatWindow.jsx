@@ -25,6 +25,20 @@ const ChatWindow = ({
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
+  // ✅ NEW: FORMAT TIME FUNCTION
+  const formatTime = (date) => {
+    if (!date) return ""; // ✅ handle undefined
+
+    const d = new Date(date);
+
+    if (isNaN(d.getTime())) return ""; // ✅ handle invalid date
+
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const renderMessageContent = (msg) => {
     if (msg.messageType === "image") {
       return (
@@ -210,7 +224,6 @@ const ChatWindow = ({
     setInput("");
   };
 
-  // ✅ UPDATED HERE ONLY
   if (!selectedChat && messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-500">
@@ -230,7 +243,6 @@ const ChatWindow = ({
       />
 
       <div className="flex-1 overflow-y-auto p-4 bg-[#f1f5f9]">
-        {/* ✅ EMPTY STATE (already correct) */}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <p className="text-lg">👋 Start conversation</p>
@@ -287,6 +299,12 @@ const ChatWindow = ({
                     ) : (
                       <>
                         {renderMessageContent(msg)}
+
+                        {/* ✅ NEW: TIME */}
+                        <div className="text-[10px] mt-1 text-right opacity-70">
+                          {formatTime(msg.createdAt)}
+                        </div>
+
                         {msg.isEdited && (
                           <span className="text-[10px] ml-1 opacity-70">
                             (edited)

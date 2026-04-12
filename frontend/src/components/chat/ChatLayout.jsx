@@ -66,29 +66,32 @@ const ChatLayout = () => {
         message: msg.message,
         messageType: msg.messageType || "text",
         fileUrl: msg.fileUrl || "",
-        fromUserId: msg.fromUserId || msg.senderId?._id || msg.senderId,
+        fromUserId:
+          msg.fromUserId || msg.senderId?._id || msg.senderId,
+
+        // ✅ FIX: ADD THIS LINE (IMPORTANT)
+        createdAt: msg.createdAt,
       }));
 
       setMessages(normalized);
 
       socket?.emit("mark-as-seen", { chatId });
-      toast.dismiss(); // ✅ stop loader
+      toast.dismiss();
     } else {
       toast.dismiss();
       toast.error(res.message || "Failed to load messages ❌");
     }
   };
 
-  // =========================
-  // ✅ UPDATED: SELECT CHAT
-  // =========================
+  // SELECT CHAT
   const handleSelectChat = (chat) => {
     setSelectedChat(chat);
     setShowProfile(false);
 
-    // 🔥 RESET UNREAD COUNT (IMPORTANT FIX)
     setChats((prev) =>
-      prev.map((c) => (c._id === chat._id ? { ...c, unreadCount: 0 } : c)),
+      prev.map((c) =>
+        c._id === chat._id ? { ...c, unreadCount: 0 } : c
+      )
     );
 
     fetchMessages(chat._id);
@@ -96,13 +99,10 @@ const ChatLayout = () => {
     const otherUserId = chat.members[0]._id;
     socket?.emit("check-user-status", { userId: otherUserId });
 
-    // ✅ ensure seen trigger
     socket?.emit("mark-as-seen", { chatId: chat._id });
   };
 
-  // =========================
-  // ✅ UPDATED: MESSAGE LISTENER
-  // =========================
+  // MESSAGE LISTENER
   useEffect(() => {
     if (!socket) return;
 
@@ -112,18 +112,17 @@ const ChatLayout = () => {
         return;
       }
 
-      // ✅ if current chat is open → show message
       if (data.chatId === selectedChat?._id) {
         setMessages((prev) => {
-          const exists = prev.some((msg) => msg.messageId === data.messageId);
+          const exists = prev.some(
+            (msg) => msg.messageId === data.messageId
+          );
           if (exists) return prev;
           return [...prev, data];
         });
 
-        // ✅ mark seen instantly
         socket.emit("mark-as-seen", { chatId: data.chatId });
       } else {
-        // 🔥 INCREMENT UNREAD COUNT
         setChats((prev) =>
           prev.map((chat) =>
             chat._id === data.chatId
@@ -131,12 +130,11 @@ const ChatLayout = () => {
                   ...chat,
                   unreadCount: (chat.unreadCount || 0) + 1,
                 }
-              : chat,
-          ),
+              : chat
+          )
         );
       }
 
-      // OPTIONAL: keep last message fresh
       fetchChats();
     };
 
@@ -148,9 +146,7 @@ const ChatLayout = () => {
     };
   }, [socket, selectedChat]);
 
-  // =========================
   // STATUS LISTENERS
-  // =========================
   useEffect(() => {
     if (!socket) return;
 
@@ -186,9 +182,7 @@ const ChatLayout = () => {
     };
   }, [socket]);
 
-  // =========================
   // TYPING LISTENERS
-  // =========================
   useEffect(() => {
     if (!socket) return;
 

@@ -145,7 +145,7 @@ const UserModal = ({ onClose, refreshChats, currentUserId }) => {
             <div
               key={user._id}
               onClick={() => createChat(user._id)}
-              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-pink-100 transition"
             >
               {user?.avatar?.url ? (
                 <img

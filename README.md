@@ -121,7 +121,7 @@ Hellow/
 1. **Clone the repository**
 ```bash
    git clone https://github.com/yourusername/hellow.git
-   cd hellow
+   cd hello
 ```
 
 2. **Setup Backend**

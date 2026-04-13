@@ -3,22 +3,22 @@ const MessageMenu = ({
   onDelete,
   onEdit,
   messageId,
-  messageType = "text",   // ✅ NEW
-  isDeleted = false       // ✅ NEW
+  messageType = "text",
+  isDeleted = false,
 }) => {
-  if (!isOpen || isDeleted) return null; // ✅ prevent menu for deleted
+  if (!isOpen || isDeleted) return null;
 
-  const canEdit = messageType === "text"; // ✅ only text editable
+  const canEdit = messageType === "text";
 
   return (
     <div
       onClick={(e) => e.stopPropagation()}
       className="absolute right-0 mt-2 w-44 bg-white border rounded-xl shadow-lg z-50 overflow-hidden"
     >
-      {/* ✏️ Edit (ONLY TEXT) */}
+      {/* ✏️ Edit */}
       {canEdit && (
         <button
-          onClick={() => onEdit(messageId)}
+          onClick={onEdit}   // ✅ FIXED (no messageId)
           className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition flex items-center gap-2"
         >
           ✏️ Edit

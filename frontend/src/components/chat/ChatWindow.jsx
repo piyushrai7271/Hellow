@@ -25,7 +25,7 @@ const ChatWindow = ({
   const otherUserId = selectedChat?.members?.[0]?._id;
   const userStatus = userStatusMap?.[otherUserId] || {};
 
-  // ✅ FORMAT TIME
+  // FORMAT TIME
   const formatTime = (date) => {
     if (!date) return "";
     const d = new Date(date);
@@ -36,21 +36,16 @@ const ChatWindow = ({
     });
   };
 
-  // ✅ FIXED: TICK STATUS (CORRECT LOGIC)
+  // MESSAGE STATUS
   const getMessageStatus = (msg) => {
     if (!msg) return "sent";
 
-    // ✅ Seen = highest priority
     if (msg.seenBy?.includes(otherUserId)) return "seen";
-
-    // ✅ If user is online → delivered
     if (userStatusMap?.[otherUserId]?.isOnline) return "delivered";
 
-    // ✅ Otherwise → sent
     return "sent";
   };
 
-  // ✅ FIXED: BETTER UI COLORS (VISIBLE ON BLUE)
   const renderTicks = (msg) => {
     const status = getMessageStatus(msg);
 
@@ -300,11 +295,36 @@ const ChatWindow = ({
                       <p className="italic text-sm opacity-70">
                         This message was deleted
                       </p>
+                    ) : editingMsgId === msg.messageId ? (
+                      // ✅ EDIT UI RESTORED
+                      <div className="bg-white p-2 rounded-lg shadow-inner">
+                        <input
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          autoFocus
+                          className="w-full px-3 py-2 text-sm text-black border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button
+                            onClick={() => setEditingMsgId(null)}
+                            className="px-3 text-black py-1 text-xs rounded-md bg-gray-200"
+                          >
+                            Cancel
+                          </button>
+
+                          <button
+                            onClick={() => handleEditSave(msg.messageId)}
+                            className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <>
                         {renderMessageContent(msg)}
 
-                        {/* ✅ TIME + TICKS */}
                         <div className="text-[10px] mt-1 flex justify-end items-center gap-1 opacity-80">
                           {formatTime(msg.createdAt)}
                           {isMe && renderTicks(msg)}

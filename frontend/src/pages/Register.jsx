@@ -15,6 +15,8 @@ const Register = () => {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false); // ✅ NEW
+
   const handleRegister = async () => {
     const res = await apiFetch("/api/user/register", {
       method: "POST",
@@ -25,7 +27,6 @@ const Register = () => {
       toast.success("Account created successfully 🎉");
       navigate("/login");
     } else {
-      // ✅ FIX: show backend error
       toast.error(res.message);
     }
   };
@@ -75,12 +76,22 @@ const Register = () => {
           <option value="Other">Other</option>
         </select>
 
-        <input
-          className="w-full border border-gray-300 p-2 mb-5 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="Password"
-          type="password"
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
+        {/* PASSWORD FIELD WITH TOGGLE */}
+        <div className="relative mb-5">
+          <input
+            className="w-full border border-gray-300 p-2 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="Password"
+            type={showPassword ? "text" : "password"} // ✅ TOGGLE
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+
+          <span
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 top-2.5 cursor-pointer text-gray-500 text-sm select-none"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </span>
+        </div>
 
         <button
           onClick={handleRegister}
@@ -90,7 +101,7 @@ const Register = () => {
         </button>
 
         <p
-          className="text-sm text-center mt-4 cursor-pointer text-indigo-600 hover:underline"
+          className="text-shadow-lg text-center mt-4 cursor-pointer text-indigo-600 hover:underline"
           onClick={() => navigate("/login")}
         >
           Already have an account? Login

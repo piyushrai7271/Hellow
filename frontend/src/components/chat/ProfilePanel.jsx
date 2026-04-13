@@ -29,10 +29,10 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
           {user.avatar?.url ? (
             <img
               src={user.avatar.url}
-              className="w-24 h-24 rounded-full object-cover"
+              className="w-30 h-30 rounded-full object-cover"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-2xl text-white">
+            <div className="w-30 h-30 rounded-full bg-indigo-500 flex items-center justify-center text-2xl text-white">
               {user.fullName?.charAt(0).toUpperCase()}
             </div>
           )}
@@ -57,7 +57,7 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
           {/* ❌ NO TOAST HERE */}
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="p-2 border rounded-lg hover:bg-gray-200"
+            className="p-2 border rounded-lg hover:bg-pink-100"
           >
             Change Password
           </button>
@@ -65,7 +65,7 @@ const ProfilePanel = ({ user, setUser, closeProfile }) => {
           {/* ❌ NO TOAST HERE */}
           <button
             onClick={() => setShowEditModal(true)}
-            className="p-2 border rounded-lg hover:bg-gray-200"
+            className="p-2 border rounded-lg hover:bg-pink-100"
           >
             Edit Profile
           </button>

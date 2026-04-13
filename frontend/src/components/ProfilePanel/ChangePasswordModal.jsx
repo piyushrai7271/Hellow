@@ -6,10 +6,14 @@ const ChangePasswordModal = ({ onClose }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ NEW
+  const [loading, setLoading] = useState(false);
+
+  // ✅ NEW STATES
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChangePassword = async () => {
-    // ✅ VALIDATION
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("Please fill all fields");
       return;
@@ -38,7 +42,6 @@ const ChangePasswordModal = ({ onClose }) => {
       } else {
         toast.error(res.message || "Error changing password ❌");
       }
-
     } catch (error) {
       toast.error("Something went wrong ❌");
     } finally {
@@ -53,29 +56,56 @@ const ChangePasswordModal = ({ onClose }) => {
 
         <h2 className="text-lg font-semibold">Change Password</h2>
 
-        <input
-          type="password"
-          placeholder="Current Password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          className="border p-2 rounded"
-        />
+        {/* CURRENT PASSWORD */}
+        <div className="relative">
+          <input
+            type={showCurrent ? "text" : "password"}
+            placeholder="Current Password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="border p-2 rounded w-full pr-10"
+          />
+          <span
+            onClick={() => setShowCurrent((prev) => !prev)}
+            className="absolute right-3 top-2 cursor-pointer text-sm text-gray-500"
+          >
+            {showCurrent ? "Hide" : "Show"}
+          </span>
+        </div>
 
-        <input
-          type="password"
-          placeholder="New Password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="border p-2 rounded"
-        />
+        {/* NEW PASSWORD */}
+        <div className="relative">
+          <input
+            type={showNew ? "text" : "password"}
+            placeholder="New Password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="border p-2 rounded w-full pr-10"
+          />
+          <span
+            onClick={() => setShowNew((prev) => !prev)}
+            className="absolute right-3 top-2 cursor-pointer text-sm text-gray-500"
+          >
+            {showNew ? "Hide" : "Show"}
+          </span>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="border p-2 rounded"
-        />
+        {/* CONFIRM PASSWORD */}
+        <div className="relative">
+          <input
+            type={showConfirm ? "text" : "password"}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="border p-2 rounded w-full pr-10"
+          />
+          <span
+            onClick={() => setShowConfirm((prev) => !prev)}
+            className="absolute right-3 top-2 cursor-pointer text-sm text-gray-500"
+          >
+            {showConfirm ? "Hide" : "Show"}
+          </span>
+        </div>
 
         <div className="flex justify-end gap-2 mt-3">
           <button onClick={onClose} disabled={loading}>

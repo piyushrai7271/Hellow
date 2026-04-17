@@ -1,36 +1,25 @@
-import Message from "../../models/message.model.js";
-import Chat from "../../models/chat.model.js";
+import { markAsSeenService } from "../../services/message.service.js";
 
 const registerSeen = (io, socket) => {
   socket.on("mark-as-seen", async ({ chatId }) => {
     if (!chatId) return;
 
     try {
-      // Update messages
-      await Message.updateMany(
-        {
-          chatId,
-          senderId: { $ne: socket.userId },
-        },
-        {
-          $addToSet: { seenBy: socket.userId },
-        }
-      );
+      const result = await markAsSeenService({
+        chatId,
+        userId: socket.userId,
+      });
 
-      // Notify other users
-      const chat = await Chat.findById(chatId);
-
-      chat.members.forEach((memberId) => {
+      result.members.forEach((memberId) => {
         if (memberId.toString() !== socket.userId.toString()) {
           io.to(memberId.toString()).emit("messages-seen", {
-            chatId,
-            seenBy: socket.userId.toString(),
+            chatId: result.chatId,
+            seenBy: result.seenBy,
           });
         }
       });
-
     } catch (error) {
-      console.error("Seen error:", error);
+      console.error("Seen error:", error.message);
     }
   });
 };

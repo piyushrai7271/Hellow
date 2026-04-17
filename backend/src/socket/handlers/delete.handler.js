@@ -1,54 +1,35 @@
-import Message from "../../models/message.model.js";
-import Chat from "../../models/chat.model.js";
+import { deleteMessageService } from "../../services/message.service.js";
 
 const registerDeleteMessage = (io, socket) => {
   socket.on("delete-message", async ({ messageId, type }) => {
     if (!messageId || !type) return;
 
     try {
-      const message = await Message.findById(messageId);
-      if (!message) return;
+      const result = await deleteMessageService({
+        messageId,
+        userId: socket.userId,
+        type,
+      });
 
-      // 🔒 Only sender can delete
-      if (message.senderId.toString() !== socket.userId.toString()) {
-        return;
-      }
-
-      // ============================
       // 🟢 DELETE FOR ME
-      // ============================
-      if (type === "delete-for-me") {
-        await Message.findByIdAndUpdate(messageId, {
-          $addToSet: { deletedFor: socket.userId },
-        });
-
+      if (result.type === "delete-for-me") {
         socket.emit("message-deleted", {
-          messageId,
-          type: "delete-for-me",
+          messageId: result.messageId,
+          type: result.type,
         });
       }
 
-      // ============================
       // 🔴 DELETE FOR EVERYONE
-      // ============================
-      if (type === "delete-for-everyone") {
-        await Message.findByIdAndUpdate(messageId, {
-          isDeleted: true,
-          message: "This message was deleted",
-          fileUrl: "", // 🔥 important
-        });
-
-        const chat = await Chat.findById(message.chatId);
-
-        chat.members.forEach((memberId) => {
+      if (result.type === "delete-for-everyone") {
+        result.members.forEach((memberId) => {
           io.to(memberId.toString()).emit("message-deleted", {
-            messageId,
-            type: "delete-for-everyone",
+            messageId: result.messageId,
+            type: result.type,
           });
         });
       }
     } catch (error) {
-      console.error("Delete message error:", error);
+      console.error("Delete message error:", error.message);
     }
   });
 };

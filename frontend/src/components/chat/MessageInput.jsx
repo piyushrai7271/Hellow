@@ -1,20 +1,32 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   const fileRef = useRef();
+  const textareaRef = useRef();
+
   const [uploading, setUploading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  // ✅ NEW: typing timeout ref
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
+
+  const canSend = input.trim().length > 0;
+
+  // ✅ AUTO RESIZE TEXTAREA
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  }, [input]);
 
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file || !selectedChat) return;
 
-    const toastId = toast.loading("Uploading file..."); // ✅ FIX
+    const toastId = toast.loading("Uploading file...");
 
     try {
       setUploading(true);
@@ -28,13 +40,13 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
           method: "POST",
           body: formData,
           credentials: "include",
-        },
+        }
       );
 
       const data = await res.json();
 
       if (data.success) {
-        toast.success("File sent 📤", { id: toastId }); // ✅ update same toast
+        toast.success("File sent 📤", { id: toastId });
 
         socket.emit("private-message", {
           toUserId: selectedChat.members[0]._id,
@@ -53,7 +65,7 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
     }
   };
 
-  // ✅ NEW: HANDLE TYPING
+  // ✅ TYPING
   const handleTyping = (value) => {
     setInput(value);
 
@@ -61,25 +73,29 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
 
     const toUserId = selectedChat.members[0]._id;
 
-    // 🔥 send typing-start only once
     if (!isTypingRef.current) {
       socket.emit("typing-start", { toUserId });
       isTypingRef.current = true;
     }
 
-    // 🧠 reset timer
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // ⏱️ stop typing after 1.5s of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("typing-stop", { toUserId });
       isTypingRef.current = false;
     }, 1500);
   };
 
-  // ✅ Handle menu click
+  // ✅ ENTER SEND / SHIFT ENTER NEW LINE
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const handleSelectType = (type) => {
     if (!fileRef.current) return;
 
@@ -95,9 +111,8 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
     setShowMenu(false);
   };
 
-  // ✅ UPDATED SEND (stop typing immediately)
   const handleSendMessage = () => {
-    if (!input.trim()) return;
+    if (!canSend || !selectedChat) return;
 
     const toUserId = selectedChat.members[0]._id;
 
@@ -108,7 +123,7 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
   };
 
   return (
-    <div className="relative p-3 border-t flex gap-2 shrink-0">
+    <div className="relative p-3 border-t flex gap-2 items-end">
       {/* ➕ BUTTON */}
       <button
         onClick={() => setShowMenu((prev) => !prev)}
@@ -149,20 +164,23 @@ const MessageInput = ({ input, setInput, onSend, socket, selectedChat }) => {
       {/* FILE INPUT */}
       <input type="file" hidden ref={fileRef} onChange={handleFile} />
 
-      {/* TEXT INPUT */}
-      <input
+      {/* TEXTAREA */}
+      <textarea
+        ref={textareaRef}
         value={input}
-        onChange={(e) => handleTyping(e.target.value)} // ✅ UPDATED
-        className="flex-1 p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400"
+        onChange={(e) => handleTyping(e.target.value)}
+        onKeyDown={handleKeyDown}
+        rows={1}
+        className="flex-1 p-2 border rounded-lg outline-none resize-none max-h-32 overflow-y-auto focus:ring-2 focus:ring-blue-400"
         placeholder="Type a message..."
       />
 
       {/* SEND BUTTON */}
       <button
-        onClick={handleSendMessage} // ✅ UPDATED
-        disabled={uploading}
+        onClick={handleSendMessage}
+        disabled={!canSend || uploading}
         className={`px-4 py-2 rounded-lg text-white transition ${
-          uploading
+          !canSend || uploading
             ? "bg-gray-400 cursor-not-allowed"
             : "bg-blue-500 hover:bg-blue-600"
         }`}

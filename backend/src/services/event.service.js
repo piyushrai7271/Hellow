@@ -54,6 +54,16 @@ const emitMessagesSeen = (io, { members, chatId, seenBy }) => {
   });
 };
 
+// 🔥 NEW: emit delivery after reconnect
+const emitBulkDelivered = (io, deliveries, userId) => {
+  deliveries.forEach(({ messageId, senderId }) => {
+    io.to(senderId).emit("message-delivered", {
+      messageId,
+      userId,
+    });
+  });
+};
+
 // typing
 const emitTypingStart = (io, { toUserId, userId }) => {
   io.to(toUserId.toString()).emit(EVENTS.USER_TYPING, { userId });
@@ -83,4 +93,5 @@ export {
   emitTypingStop,
   emitUserOnline,
   emitUserOffline,
+  emitBulkDelivered
 };

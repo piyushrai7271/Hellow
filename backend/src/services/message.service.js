@@ -145,10 +145,38 @@ const markAsSeenService = async ({ chatId, userId }) => {
     members: chat.members,
   };
 };
+// 🔥 NEW: sync undelivered messages when user comes online
+const syncUndeliveredMessagesService = async ({ userId }) => {
+  // find messages where:
+  // - this user is NOT sender
+  // - user not in deliveredTo
+  const messages = await Message.find({
+    senderId: { $ne: userId },
+    deliveredTo: { $ne: userId },
+  }).select("_id senderId");
+
+  if (!messages.length) return [];
+
+  // update all messages
+  await Message.updateMany(
+    {
+      _id: { $in: messages.map((m) => m._id) },
+    },
+    {
+      $addToSet: { deliveredTo: userId },
+    }
+  );
+
+  return messages.map((msg) => ({
+    messageId: msg._id.toString(),
+    senderId: msg.senderId.toString(),
+  }));
+};
 
 export {
   sendPrivateMessageService,
   deleteMessageService,
   editMessageService,
   markAsSeenService,
+  syncUndeliveredMessagesService
 };

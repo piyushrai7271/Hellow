@@ -10,7 +10,9 @@ import { EVENTS } from "../../config/event.js";
 import {
   emitUserOnline,
   emitUserOffline,
+  emitBulkDelivered, // 🔥 NEW
 } from "../../services/event.service.js";
+import { syncUndeliveredMessagesService } from "../../services/message.service.js"; // 🔥 NEW
 
 const handleConnection = (io, socket) => {
   // ✅ Handle custom socket errors safely
@@ -30,6 +32,21 @@ const handleConnection = (io, socket) => {
 
   // ✅ Emit user online
   emitUserOnline(socket, userId);
+
+  // 🔥 NEW: SYNC UNDELIVERED MESSAGES ON RECONNECT
+  (async () => {
+    try {
+      const deliveries = await syncUndeliveredMessagesService({
+        userId,
+      });
+
+      if (deliveries.length) {
+        emitBulkDelivered(io, deliveries, userId);
+      }
+    } catch (error) {
+      console.error("Delivery sync error:", error?.message || error);
+    }
+  })();
 
   // ✅ Register all feature handlers
   registerPrivateChat(io, socket);

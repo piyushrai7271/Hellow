@@ -1,4 +1,5 @@
 import { deleteMessageService } from "../../services/message.service.js";
+import { emitMessageDeleted } from "../../services/event.service.js";
 
 const registerDeleteMessage = (io, socket) => {
   socket.on("delete-message", async ({ messageId, type }) => {
@@ -11,23 +12,12 @@ const registerDeleteMessage = (io, socket) => {
         type,
       });
 
-      // 🟢 DELETE FOR ME
-      if (result.type === "delete-for-me") {
-        socket.emit("message-deleted", {
-          messageId: result.messageId,
-          type: result.type,
-        });
-      }
+      emitMessageDeleted(io, {
+        members: result.members,
+        messageId: result.messageId,
+        type: result.type,
+      });
 
-      // 🔴 DELETE FOR EVERYONE
-      if (result.type === "delete-for-everyone") {
-        result.members.forEach((memberId) => {
-          io.to(memberId.toString()).emit("message-deleted", {
-            messageId: result.messageId,
-            type: result.type,
-          });
-        });
-      }
     } catch (error) {
       console.error("Delete message error:", error.message);
     }

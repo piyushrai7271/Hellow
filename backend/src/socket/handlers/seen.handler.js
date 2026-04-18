@@ -1,4 +1,5 @@
 import { markAsSeenService } from "../../services/message.service.js";
+import { emitMessagesSeen } from "../../services/event.service.js";
 
 const registerSeen = (io, socket) => {
   socket.on("mark-as-seen", async ({ chatId }) => {
@@ -10,14 +11,8 @@ const registerSeen = (io, socket) => {
         userId: socket.userId,
       });
 
-      result.members.forEach((memberId) => {
-        if (memberId.toString() !== socket.userId.toString()) {
-          io.to(memberId.toString()).emit("messages-seen", {
-            chatId: result.chatId,
-            seenBy: result.seenBy,
-          });
-        }
-      });
+      emitMessagesSeen(io, result);
+
     } catch (error) {
       console.error("Seen error:", error.message);
     }

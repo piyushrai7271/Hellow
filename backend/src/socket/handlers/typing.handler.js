@@ -1,8 +1,14 @@
+import {
+  emitTypingStart,
+  emitTypingStop,
+} from "../../services/event.service.js";
+
 const registerTyping = (io, socket) => {
   socket.on("typing-start", ({ toUserId }) => {
     if (!toUserId) return;
 
-    io.to(toUserId.toString()).emit("user-typing", {
+    emitTypingStart(io, {
+      toUserId,
       userId: socket.userId.toString(),
     });
   });
@@ -10,7 +16,8 @@ const registerTyping = (io, socket) => {
   socket.on("typing-stop", ({ toUserId }) => {
     if (!toUserId) return;
 
-    io.to(toUserId.toString()).emit("user-stop-typing", {
+    emitTypingStop(io, {
+      toUserId,
       userId: socket.userId.toString(),
     });
   });

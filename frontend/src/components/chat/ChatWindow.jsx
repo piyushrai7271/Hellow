@@ -36,15 +36,19 @@ const ChatWindow = ({
     });
   };
 
-  // MESSAGE STATUS
-  const getMessageStatus = (msg) => {
-    if (!msg) return "sent";
+  // MESSAGE STATUS (FIXED ✅)
+const getMessageStatus = (msg) => {
+  if (!msg) return "sent";
 
-    if (msg.seenBy?.includes(otherUserId)) return "seen";
-    if (userStatusMap?.[otherUserId]?.isOnline) return "delivered";
+  // ✅ Seen (highest priority)
+  if (msg.seenBy?.includes(otherUserId)) return "seen";
 
-    return "sent";
-  };
+  // ✅ Delivered (persistent, NOT dependent on online status)
+  if (msg.deliveredTo?.includes(otherUserId)) return "delivered";
+
+  // ✅ Sent (fallback)
+  return "sent";
+};
 
   const renderTicks = (msg) => {
     const status = getMessageStatus(msg);
@@ -182,6 +186,29 @@ const ChatWindow = ({
     return () => socket.off("message-edited");
   }, [socket]);
 
+// ✅ DELIVERY LISTENER (FIXED 🔥)
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("message-delivered", ({ messageId, userId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.messageId === messageId
+            ? {
+                ...msg,
+                deliveredTo: Array.from(
+                  new Set([...(msg.deliveredTo || []), userId])
+                ),
+              }
+            : msg
+        )
+      );
+    });
+
+    return () => socket.off("message-delivered");
+  }, [socket]);
+
+  
   const handleDelete = (messageId, type) => {
     if (!socket) {
       toast.error("Connection lost ❌");
